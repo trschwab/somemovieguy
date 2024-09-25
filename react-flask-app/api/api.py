@@ -16,6 +16,22 @@ CORS(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+
+class UserDiary(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    day = db.Column(db.String(10), nullable=False)
+    month = db.Column(db.String(20), nullable=False)
+    year = db.Column(db.String(10), nullable=False)
+    film = db.Column(db.String(255), nullable=False)
+    released = db.Column(db.String(20), nullable=True)
+    rating = db.Column(db.String(10), nullable=True)
+    review_link = db.Column(db.String(255), nullable=True)
+    film_link = db.Column(db.String(255), nullable=True)
+
+    user = db.relationship('User', backref=db.backref('diary_entries', lazy=True))
+
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -44,7 +60,8 @@ def get_user_diary_info(a_user):
     diary_url = get_diary(a_user)
     while diary_url:
         r = requests.get(diary_url)
-        soup = BeautifulSoup(r.content)
+        soup = BeautifulSoup(r.content, features="lxml")
+
 
         # Extract the table as a df
         table = soup.find_all('table')
@@ -126,40 +143,71 @@ def index():
 @app.route('/api/time/')
 def get_current_time():
     return {'time': str(int(time.time()))}
-
 @app.route('/api/users/', methods=['POST'])
 def add_user():
     data = request.get_json()
     username = data.get('username')
 
-    if is_valid_username(username) == False:
+    if not is_valid_username(username):
         return jsonify({'message': 'Username is invalid on letterboxd!'}), 400
 
-    # Check if username is valid (you can add more validation logic here)
+    # Check if username is valid
     if not username:
         return jsonify({'message': 'Username is required!'}), 400
 
     # Check for existing username
     existing_user = User.query.filter_by(username=username).first()
     if existing_user:
-        return jsonify({'message': 'Username already exists!'}), 409
+        user_data_df = get_user_data(username)
+        
+        # Instead of saving to a CSV, save to the database
+        for index, row in user_data_df.iterrows():
+            diary_entry = UserDiary(
+                user_id=existing_user.id,
+                day=row['day'],
+                month=row['month'],
+                year=row['year'],
+                film=row['film'],
+                released=row.get('released', None),
+                rating=row.get('rating', None),
+                review_link=row.get('review_link', None),
+                film_link=row.get('film_link', None)
+            )
+            db.session.add(diary_entry)
 
-    # Fetch user data and create a DataFrame
-    user_data_df = get_user_data(username)
-    
-    # Optionally, you can save the DataFrame to a CSV if needed
-    # user_data_df.to_csv(f"{username}_data.csv", index=False)
+        db.session.commit()
+        return jsonify({'message': 'Username already exists and diary entries updated!'}), 409
 
-    # Convert the DataFrame to a JSON-compatible format
-    user_data_json = user_data_df.to_dict(orient='records')
-
-    # Store the new user in the database
+    # Add new user and save diary entries to the database
     new_user = User(username=username)
     db.session.add(new_user)
     db.session.commit()
 
+    # Fetch user data and create a DataFrame
+    user_data_df = get_user_data(username)
+
+    # Save each diary entry to the UserDiary table
+    for index, row in user_data_df.iterrows():
+        diary_entry = UserDiary(
+            user_id=new_user.id,
+            day=row['day'],
+            month=row['month'],
+            year=row['year'],
+            film=row['film'],
+            released=row.get('released', None),
+            rating=row.get('rating', None),
+            review_link=row.get('review_link', None),
+            film_link=row.get('film_link', None)
+        )
+        db.session.add(diary_entry)
+
+    # Commit the new diary entries to the database
+    db.session.commit()
+
     # Return the user data along with a success message
+    user_data_json = user_data_df.to_dict(orient='records')
     return jsonify({'message': 'User added successfully!', 'user_data': user_data_json}), 201
+
 
 
 @app.route('/api/users/', methods=['GET'])
