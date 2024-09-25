@@ -6,6 +6,8 @@ function App() {
   const [currentTime, setCurrentTime] = useState(0);
   const [username, setUsername] = useState('');
   const [users, setUsers] = useState([]);
+  const [userData, setUserData] = useState([]);
+  const [validationMessage, setValidationMessage] = useState('');
 
   useEffect(() => {
     // Fetch the current time
@@ -32,16 +34,28 @@ function App() {
       },
       body: JSON.stringify({ username }),
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.message || 'Something went wrong');
+        });
+      }
+      return response.json();
+    })
     .then(data => {
       console.log(data);
-      // Fetch updated users list after adding a new user
-      return fetch('/api/users/');
-    })
-    .then(res => res.json())
-    .then(data => {
-      setUsers(data); // Update the users state with the new list
+      setValidationMessage(data.message); // Success message
       setUsername(''); // Clear the input
+
+      // Fetch updated users list after adding a new user
+      setUsers(prevUsers => [...prevUsers, { username }]); // Add new user to the state
+
+      // Display the user data (for example, setting it to state)
+      setUserData(data.user_data); // Create a new state for user data
+    })
+    .catch(error => {
+      setValidationMessage(error.message);
+      console.error('Error:', error);
     });
   };
 
@@ -62,6 +76,7 @@ function App() {
           />
           <button type="submit">Add User</button>
         </form>
+        {validationMessage && <p>{validationMessage}</p>}
         <h2>The current time is {currentTime}.</h2>
         <h3>Users:</h3>
         <ul>
@@ -73,6 +88,38 @@ function App() {
             <li>No users found.</li>
           )}
         </ul>
+        {userData.length > 0 && (
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Day</th>
+                <th>Month</th>
+                <th>Year</th>
+                <th>Film</th>
+                <th>Released</th>
+                <th>Rating</th>
+                <th>Review Link</th>
+                <th>Film Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              {userData.map((item, index) => (
+                <tr key={index}>
+                  <td>{item.name}</td>
+                  <td>{item.day}</td>
+                  <td>{item.month}</td>
+                  <td>{item.year}</td>
+                  <td>{item.film}</td>
+                  <td>{item.released}</td>
+                  <td>{item.rating}</td>
+                  <td><a href={item.review_link}>Review</a></td>
+                  <td><a href={item.film_link}>Film Link</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </header>
     </div>
   );
