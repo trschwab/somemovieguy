@@ -9,11 +9,12 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "yarn": "^1.22.22"
   },
   "scripts": {
     "start": "react-scripts start",
-    "start-api": "cd api && flask --app api.py run --no-debugger",
+    "start-api": "cd api && venv/bin/flask --app api.py run --no-debugger",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "test-api": "cd api && flask test",
@@ -37,5 +38,5 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "https://localhost:5000"
+  "proxy": "http://localhost:5000"
 }
