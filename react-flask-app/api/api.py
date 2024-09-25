@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import pandas as pd
 from bs4 import BeautifulSoup
+from io import StringIO
 
 app = Flask(__name__, static_folder="../build", static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -65,7 +66,7 @@ def get_user_diary_info(a_user):
 
         # Extract the table as a df
         table = soup.find_all('table')
-        df_list.append(pd.read_html(str(table), extract_links="all")[0])
+        df_list.append(pd.read_html(StringIO(str(table)), extract_links="all")[0])
 
         # Find out if there are any subsequent pages
         older_link = soup.find_all("a", text="Older")
@@ -208,6 +209,35 @@ def add_user():
     user_data_json = user_data_df.to_dict(orient='records')
     return jsonify({'message': 'User added successfully!', 'user_data': user_data_json}), 201
 
+
+@app.route('/api/user_diary/<username>/', methods=['GET'])
+def get_user_diary(username):
+    # Find the user by username
+    user = User.query.filter_by(username=username).first()
+
+    if not user:
+        return jsonify({'message': 'User not found!'}), 404
+
+    # Get all diary entries for this user
+    diary_entries = UserDiary.query.filter_by(user_id=user.id).all()
+
+    # If no diary entries are found
+    if not diary_entries:
+        return jsonify({'message': 'No diary entries found for this user.'}), 404
+
+    # Convert diary entries to a list of dictionaries
+    diary_data = [{
+        'day': entry.day,
+        'month': entry.month,
+        'year': entry.year,
+        'film': entry.film,
+        'released': entry.released,
+        'rating': entry.rating,
+        'review_link': entry.review_link,
+        'film_link': entry.film_link
+    } for entry in diary_entries]
+
+    return jsonify({'username': username, 'diary_entries': diary_data}), 200
 
 
 @app.route('/api/users/', methods=['GET'])
