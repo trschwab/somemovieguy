@@ -8,6 +8,7 @@ from flask_migrate import Migrate
 import pandas as pd
 from bs4 import BeautifulSoup
 from io import StringIO
+from utils.get_stats import get_top_rated_movies
 
 app = Flask(__name__, static_folder="../build", static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -144,13 +145,14 @@ def index():
 @app.route('/api/time/')
 def get_current_time():
     return {'time': str(int(time.time()))}
+
 @app.route('/api/users/', methods=['POST'])
 def add_user():
     data = request.get_json()
     username = data.get('username')
 
     if not is_valid_username(username):
-        return jsonify({'message': 'Username is invalid on letterboxd!'}), 400
+        return jsonify({'message': 'Username is invalid on Letterboxd!'}), 400
 
     # Check if username is valid
     if not username:
@@ -161,7 +163,7 @@ def add_user():
     if existing_user:
         user_data_df = get_user_data(username)
         
-        # Instead of saving to a CSV, save to the database
+        # Update or add diary entries to the database
         for index, row in user_data_df.iterrows():
             diary_entry = UserDiary(
                 user_id=existing_user.id,
@@ -177,7 +179,13 @@ def add_user():
             db.session.add(diary_entry)
 
         db.session.commit()
-        return jsonify({'message': 'Username already exists and diary entries updated!'}), 409
+
+        # Return the user data along with a success message
+        user_data_json = user_data_df.to_dict(orient='records')
+        return jsonify({
+            'message': 'Username already exists and diary entries updated!',
+            'user_data': user_data_json
+        }), 200
 
     # Add new user and save diary entries to the database
     new_user = User(username=username)
@@ -207,7 +215,10 @@ def add_user():
 
     # Return the user data along with a success message
     user_data_json = user_data_df.to_dict(orient='records')
-    return jsonify({'message': 'User added successfully!', 'user_data': user_data_json}), 201
+    return jsonify({
+        'message': 'User added successfully!',
+        'user_data': user_data_json
+    }), 201
 
 
 @app.route('/api/user_diary/<username>/', methods=['GET'])
@@ -225,8 +236,8 @@ def get_user_diary(username):
     if not diary_entries:
         return jsonify({'message': 'No diary entries found for this user.'}), 404
 
-    # Convert diary entries to a list of dictionaries
-    diary_data = [{
+    # Convert diary entries to a DataFrame
+    diary_data = pd.DataFrame([{
         'day': entry.day,
         'month': entry.month,
         'year': entry.year,
@@ -235,9 +246,20 @@ def get_user_diary(username):
         'rating': entry.rating,
         'review_link': entry.review_link,
         'film_link': entry.film_link
-    } for entry in diary_entries]
+    } for entry in diary_entries])
 
-    return jsonify({'username': username, 'diary_entries': diary_data}), 200
+    # Get top rated movies
+    top_movies = get_top_rated_movies(diary_data)
+
+    # Convert top movies to a list of dictionaries
+    top_movies_data = top_movies.to_dict(orient='records')
+
+    return jsonify({
+        'username': username,
+        'diary_entries': diary_data.to_dict(orient='records'),
+        'top_movies': top_movies_data
+    }), 200
+
 
 
 @app.route('/api/users/', methods=['GET'])
