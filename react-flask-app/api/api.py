@@ -6,6 +6,8 @@ from utils.table_definitions import db, migrate, UserDiary, User, Movie
 from utils.lbox_extraction import is_valid_username, get_user_data
 from utils.movie_extractions import get_a_movie_info
 
+import pandas as pd
+
 app = Flask(__name__, static_folder="../build", static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -15,41 +17,43 @@ CORS(app)
 db.init_app(app)
 migrate.init_app(app, db)
 
-
 def save_movie_info(url: str):
-    # Fetch the movie info
+    url = f"https://letterboxd.com/{'/'.join(url.split('/')[2:])}"
     movie_df = get_a_movie_info(url)
     
-    # Convert the DataFrame to a dictionary for easier handling
-    movie_info = movie_df.iloc[0].to_dict()
+    # Prepare data for insertion into the database
+    movie_data = {
+        "image": movie_df["image"].values[0],
+        "director": movie_df["director"].values[0],
+        "date_modified": movie_df["dateModified"].values[0],
+        "production_company": movie_df["productionCompany"].values[0],
+        "released_event": movie_df["releasedEvent"].values[0],
+        "url": movie_df["url"].values[0],
+        "actors": movie_df["actors"].values[0],
+        "date_created": movie_df["dateCreated"].values[0],
+        "name": movie_df["name"].values[0],
+        "review_count": movie_df["reviewCount"].values[0] or 0,  # Default to 0 if None
+        "rating_value": movie_df["ratingValue"].values[0] or 0.0,  # Default to 0.0 if None
+        "rating_count": movie_df["ratingCount"].values[0] or 0  # Default to 0 if None
+    }
 
-    # Check if the movie already exists in the database by URL
-    existing_movie = Movie.query.filter_by(url=movie_info['url']).first()
-    if existing_movie:
-        print(f"Movie '{movie_info['name']}' already exists in the database.")
-        return
+    # Convert `None` values to suitable defaults (if needed)
+    for key, value in movie_data.items():
+        if value is None:
+            if "count" in key:
+                movie_data[key] = 0
+            elif "rating" in key:
+                movie_data[key] = 0.0
 
-    # Create a new Movie object
-    new_movie = Movie(
-        image=movie_info.get('image'),
-        director=movie_info.get('director'),
-        date_modified=movie_info.get('dateModified'),
-        production_company=movie_info.get('productionCompany'),
-        released_event=movie_info.get('releasedEvent'),
-        url=movie_info['url'],
-        actors=movie_info.get('actors'),
-        date_created=movie_info.get('dateCreated'),
-        name=movie_info['name'],
-        review_count=movie_info.get('reviewCount'),
-        rating_value=movie_info.get('ratingValue'),
-        rating_count=movie_info.get('ratingCount')
-    )
+    try:
+        # Save the movie data to the database
+        new_movie = Movie(**movie_data)
+        db.session.add(new_movie)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print("Movie insertion fails, likely movie already exists. Error: {e}")
 
-    # Add and commit the new movie to the database
-    db.session.add(new_movie)
-    db.session.commit()
-
-    print(f"Movie '{movie_info['name']}' added to the database.")
 
 
 
