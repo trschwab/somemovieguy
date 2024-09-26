@@ -18,6 +18,21 @@ CORS(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+from flask import g
+import sqlite3
+
+def get_db_connection():
+    if 'db' not in g:
+        g.db = sqlite3.connect('users.db')  # Ensure this matches your database URI
+        g.db.row_factory = sqlite3.Row  # This allows you to access columns by name
+    return g.db
+
+@app.teardown_appcontext
+def close_db_connection(exception):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
 
 class UserDiary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -260,6 +275,41 @@ def get_user_diary(username):
         'top_movies': top_movies_data
     }), 200
 
+
+def fetch_user_diary_entries(username):
+    conn = get_db_connection()  # Get the database connection
+    cursor = conn.cursor()
+
+    # Find the user by username
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return None  # User not found
+
+    # Fetch diary entries for the specified username
+    cursor.execute('SELECT film, rating FROM user_diary WHERE user_id = ?', (user.id,))
+    entries = cursor.fetchall()
+
+    # Convert the fetched entries to a list of dictionaries
+    return [{'film': entry['film'], 'rating': entry['rating']} for entry in entries]
+
+
+
+@app.route('/api/user_stats/<username>/', methods=['GET'])
+def get_user_stats(username):
+    # Assuming you have a function to fetch user diary entries based on username
+    user_diary_entries = fetch_user_diary_entries(username)  # Replace with your actual data fetching method
+
+    # If user diary entries are not found, handle it
+    if user_diary_entries is None:
+        return jsonify({'message': 'User not found or no diary entries available.'}), 404
+
+    # Sort entries by rating and select the top 20
+    top_movies = sorted(user_diary_entries, key=lambda x: x['rating'], reverse=True)[:20]
+
+    # Prepare the response
+    stats = [{'title': movie['film'], 'rating': movie['rating']} for movie in top_movies]
+
+    return jsonify({'top_movies': stats}), 200
 
 
 @app.route('/api/users/', methods=['GET'])
