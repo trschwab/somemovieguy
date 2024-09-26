@@ -17,45 +17,6 @@ CORS(app)
 db.init_app(app)
 migrate.init_app(app, db)
 
-def save_movie_info(url: str):
-    url = f"https://letterboxd.com/{'/'.join(url.split('/')[2:])}"
-    movie_df = get_a_movie_info(url)
-    
-    # Prepare data for insertion into the database
-    movie_data = {
-        "image": movie_df["image"].values[0],
-        "director": movie_df["director"].values[0],
-        "date_modified": movie_df["dateModified"].values[0],
-        "production_company": movie_df["productionCompany"].values[0],
-        "released_event": movie_df["releasedEvent"].values[0],
-        "url": movie_df["url"].values[0],
-        "actors": movie_df["actors"].values[0],
-        "date_created": movie_df["dateCreated"].values[0],
-        "name": movie_df["name"].values[0],
-        "review_count": movie_df["reviewCount"].values[0] or 0,  # Default to 0 if None
-        "rating_value": movie_df["ratingValue"].values[0] or 0.0,  # Default to 0.0 if None
-        "rating_count": movie_df["ratingCount"].values[0] or 0  # Default to 0 if None
-    }
-
-    # Convert `None` values to suitable defaults (if needed)
-    for key, value in movie_data.items():
-        if value is None:
-            if "count" in key:
-                movie_data[key] = 0
-            elif "rating" in key:
-                movie_data[key] = 0.0
-
-    try:
-        # Save the movie data to the database
-        new_movie = Movie(**movie_data)
-        db.session.add(new_movie)
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        print("Movie insertion fails, likely movie already exists. Error: {e}")
-
-
-
 
 @app.route('/')
 def index():
@@ -97,9 +58,27 @@ def add_user():
             )
             db.session.add(diary_entry)
 
-            # Fetch movie info using the film_link and save it in the Movie table
-            if row.get('film_link'):
-                save_movie_info(row['film_link'])  # Call function to save movie info
+            # Fetch movie info if film_link exists
+            if row['film_link']:
+                try:
+                    url = f"https://www.letterboxd.com/{'/'.join(row['film_link'].split('/')[2:])}"
+                    movie_info_df = get_a_movie_info(url)
+                    if movie_info_df is not None:
+                        # Create a new Movie object and add to the database
+                        existing_movie = Movie.query.filter_by(url=movie_info_df['url'][0]).first()
+                        if not existing_movie:
+                            new_movie = Movie(
+                                name=movie_info_df['name'][0],
+                                director=movie_info_df['director'][0],
+                                rating_value=movie_info_df['ratingValue'][0],
+                                released_event=movie_info_df['releasedEvent'][0],
+                                url=movie_info_df['url'][0],
+                                image=movie_info_df['image'][0]
+                            )
+                            db.session.add(new_movie)
+                            db.session.commit()
+                except Exception as e:
+                    print(f"Failed to fetch movie info for {url}: {e}")
 
         db.session.commit()
 
@@ -133,9 +112,27 @@ def add_user():
         )
         db.session.add(diary_entry)
 
-        # Fetch movie info using the film_link and save it in the Movie table
-        if row.get('film_link'):
-            save_movie_info(row['film_link'])  # Call function to save movie info
+        # Fetch movie info if film_link exists
+        if row['film_link']:
+            try:
+                url = f"https://www.letterboxd.com/{'/'.join(row['film_link'].split('/')[2:])}"
+                movie_info_df = get_a_movie_info(url)
+                if movie_info_df is not None:
+                    # Create a new Movie object and add to the database
+                    existing_movie = Movie.query.filter_by(url=movie_info_df['url'][0]).first()
+                    if not existing_movie:  
+                        new_movie = Movie(
+                            name=movie_info_df['name'][0],
+                            director=movie_info_df['director'][0],
+                            rating_value=movie_info_df['ratingValue'][0],
+                            released_event=movie_info_df['releasedEvent'][0],
+                            url=movie_info_df['url'][0],
+                            image=movie_info_df['image'][0]
+                        )
+                        db.session.add(new_movie)
+                        db.session.commit()
+            except Exception as e:
+                print(f"Failed to fetch movie info for {url}: {e}")
 
     # Commit the new diary entries to the database
     db.session.commit()
@@ -184,6 +181,27 @@ def get_user_diary(username):
 def get_users():
     users = User.query.all()
     return jsonify([{'id': user.id, 'username': user.username} for user in users])
+
+# New route to fetch movies from the Movie table
+@app.route('/api/movies/', methods=['GET'])
+def get_movies():
+    movies = Movie.query.all()
+
+    if not movies:
+        return jsonify({'message': 'No movies found!'}), 404
+
+    # Convert movie data into JSON format
+    movie_data = [{
+        'name': movie.name,
+        'director': movie.director,
+        'rating_value': movie.rating_value,
+        'released_event': movie.released_event,
+        'url': movie.url,
+        'image': movie.image
+    } for movie in movies]
+
+    return jsonify({'movies': movie_data}), 200
+
 
 if __name__ == '__main__':
     with app.app_context():

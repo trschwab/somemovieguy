@@ -1,4 +1,3 @@
-// src/HomePage.js
 import React, { useState } from 'react';
 
 const HomePage = () => {
@@ -6,6 +5,7 @@ const HomePage = () => {
   const [validationMessage, setValidationMessage] = useState('');
   const [userData, setUserData] = useState([]);
   const [stats, setStats] = useState(null); // To hold the statistics
+  const [movieData, setMovieData] = useState([]); // To hold the movie data
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -63,7 +63,25 @@ const HomePage = () => {
         console.error('Error:', error);
       });
   };
-  
+
+  // Fetch movie data
+  const handleGetMovies = () => {
+    fetch('/api/movies/') // Assuming your Flask API has this endpoint
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch movies.');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log(data);
+        setMovieData(data.movies); // Assuming the movie data is under 'movies'
+      })
+      .catch(error => {
+        setValidationMessage(error.message); // Show error message
+        console.error('Error:', error);
+      });
+  };
 
   return (
     <div className="HomePage">
@@ -116,6 +134,35 @@ const HomePage = () => {
           <h3>User Stats:</h3>
           <p>{stats}</p> {/* Display the stats string here */}
         </div>
+      )}
+
+      {/* Button to fetch and display movie table */}
+      <button onClick={handleGetMovies}>Get Movies</button>
+      {movieData.length > 0 && (
+        <table>
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Name</th>
+              <th>Director</th>
+              <th>Rating</th>
+              <th>Released</th>
+              <th>URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {movieData.map((movie, index) => (
+              <tr key={index}>
+                <td><img src={movie.image} alt={movie.name} width="50" /></td>
+                <td>{movie.name}</td>
+                <td>{movie.director}</td>
+                <td>{movie.rating_value}</td>
+                <td>{movie.released_event}</td>
+                <td><a href={movie.url}>Movie Link</a></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
