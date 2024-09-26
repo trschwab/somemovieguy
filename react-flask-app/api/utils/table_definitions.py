@@ -1,17 +1,8 @@
-from flask import Flask
-from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
-
-app = Flask(__name__, static_folder="../build", static_url_path='/')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-CORS(app)
-
-
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+db = SQLAlchemy()
+migrate = Migrate()
 
 class UserDiary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -27,7 +18,22 @@ class UserDiary(db.Model):
 
     user = db.relationship('User', backref=db.backref('diary_entries', lazy=True))
 
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+
+
+class Movie(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    image = db.Column(db.String(255), nullable=True)
+    director = db.Column(db.String(255), nullable=True)
+    date_modified = db.Column(db.String(50), nullable=True)
+    production_company = db.Column(db.String(255), nullable=True)
+    released_event = db.Column(db.String(255), nullable=True)
+    url = db.Column(db.String(255), nullable=False, unique=True)
+    actors = db.Column(db.String(255), nullable=True)
+    date_created = db.Column(db.String(50), nullable=True)
+    name = db.Column(db.String(255), nullable=False)
+    review_count = db.Column(db.Integer, nullable=True)
+    rating_value = db.Column(db.Float, nullable=True)
+    rating_count = db.Column(db.Integer, nullable=True)
