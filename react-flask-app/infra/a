@@ -1,0 +1,24 @@
+# This file is located at /etc/nginx/sites-enabled/react-flask-app.nginx
+
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name 149.28.51.75;
+
+    root /var/www/react-flask-app/build;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /static/ {
+        alias /var/www/react-flask-app/build/static/;
+    }
+
+    location /api {
+        include proxy_params;
+        proxy_pass http://localhost:5000;
+    }
+}
