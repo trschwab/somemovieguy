@@ -1,10 +1,11 @@
 import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from utils.get_stats import get_top_rated_movies
+from utils.get_stats import get_top_rated_movies, get_combined_user_diary_and_movies
 from utils.table_definitions import db, migrate, UserDiary, User, Movie
 from utils.lbox_extraction import is_valid_username, get_user_data
 from utils.movie_extractions import get_a_movie_info
+from sqlalchemy import and_
 
 import pandas as pd
 
@@ -17,6 +18,32 @@ CORS(app)
 db.init_app(app)
 migrate.init_app(app, db)
 
+
+def remove_duplicates():
+    users = User.query.all()
+    for user in users:
+        entries = UserDiary.query.filter_by(user_id=user.id).all()
+        unique_entries = {}
+        duplicates = []
+
+        for entry in entries:
+            # Create a unique key based on the entry's fields to identify duplicates
+            key = (entry.user_id, entry.day, entry.month, entry.year, entry.film)
+
+            if key not in unique_entries:
+                unique_entries[key] = entry
+            else:
+                duplicates.append(entry)
+
+        # Remove duplicate entries from the database
+        for duplicate in duplicates:
+            db.session.delete(duplicate)
+
+    db.session.commit()
+
+# Run the cleanup function during server initialization or periodically
+with app.app_context():
+    remove_duplicates()
 
 @app.route('/')
 def index():
@@ -42,21 +69,31 @@ def add_user():
     existing_user = User.query.filter_by(username=username).first()
     if existing_user:
         user_data_df = get_user_data(username)
-        
         # Update or add diary entries to the database
         for index, row in user_data_df.iterrows():
-            diary_entry = UserDiary(
+            # Check for existing diary entry with the same user_id and other key attributes
+            existing_entry = UserDiary.query.filter_by(
                 user_id=existing_user.id,
                 day=row['day'],
                 month=row['month'],
                 year=row['year'],
-                film=row['film'],
-                released=row.get('released', None),
-                rating=row.get('rating', None),
-                review_link=row.get('review_link', None),
-                film_link=row.get('film_link', None)
-            )
-            db.session.add(diary_entry)
+                film=row['film']
+            ).first()
+
+            if existing_entry is None:
+                # If no existing entry is found, add it
+                diary_entry = UserDiary(
+                    user_id=existing_user.id,
+                    day=row['day'],
+                    month=row['month'],
+                    year=row['year'],
+                    film=row['film'],
+                    released=row.get('released', None),
+                    rating=row.get('rating', None),
+                    review_link=row.get('review_link', None),
+                    film_link=row.get('film_link', None)
+                )
+                db.session.add(diary_entry)
 
             # Fetch movie info if film_link exists
             if row['film_link']:
@@ -97,20 +134,30 @@ def add_user():
     # Fetch user data and create a DataFrame
     user_data_df = get_user_data(username)
 
-    # Save each diary entry to the UserDiary table
     for index, row in user_data_df.iterrows():
-        diary_entry = UserDiary(
-            user_id=new_user.id,
+        # Check for existing diary entry with the same user_id and other key attributes
+        existing_entry = UserDiary.query.filter_by(
+            user_id=existing_user.id,
             day=row['day'],
             month=row['month'],
             year=row['year'],
-            film=row['film'],
-            released=row.get('released', None),
-            rating=row.get('rating', None),
-            review_link=row.get('review_link', None),
-            film_link=row.get('film_link', None)
-        )
-        db.session.add(diary_entry)
+            film=row['film']
+        ).first()
+
+        if existing_entry is None:
+            # If no existing entry is found, add it
+            diary_entry = UserDiary(
+                user_id=existing_user.id,
+                day=row['day'],
+                month=row['month'],
+                year=row['year'],
+                film=row['film'],
+                released=row.get('released', None),
+                rating=row.get('rating', None),
+                review_link=row.get('review_link', None),
+                film_link=row.get('film_link', None)
+            )
+            db.session.add(diary_entry)
 
         # Fetch movie info if film_link exists
         if row['film_link']:
@@ -201,6 +248,17 @@ def get_movies():
     } for movie in movies]
 
     return jsonify({'movies': movie_data}), 200
+
+@app.route('/api/user_diary_combined/<username>/', methods=['GET'])
+def get_combined_user_diary(username):
+    combined_df, error_message = get_combined_user_diary_and_movies(username)
+    
+    if combined_df is None:
+        return jsonify({'message': error_message}), 404
+
+    combined_data = combined_df.to_dict(orient='records')
+    return jsonify({'combined_data': combined_data}), 200
+
 
 
 if __name__ == '__main__':

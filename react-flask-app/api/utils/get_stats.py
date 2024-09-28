@@ -1,5 +1,80 @@
 import pandas as pd
 
+import pandas as pd
+from utils.table_definitions import db, UserDiary, Movie, User
+
+def get_combined_user_diary_and_movies(username):
+    # Get user by username
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return None, 'User not found!'
+    
+    # Query user diary entries
+    diary_entries = UserDiary.query.filter_by(user_id=user.id).all()
+    if not diary_entries:
+        return None, 'No diary entries found for this user.'
+
+    # Convert user diary entries to DataFrame
+    diary_data = pd.DataFrame([{
+        'day': entry.day,
+        'month': entry.month,
+        'year': entry.year,
+        'film': entry.film,
+        'released': entry.released,
+        'rating': entry.rating,
+        'review_link': entry.review_link,
+        'film_link': entry.film_link
+    } for entry in diary_entries])
+
+    # Query all movies from the Movie table
+    movies = Movie.query.all()
+    if not movies:
+        return None, 'No movies found!'
+
+    # Convert movie entries to DataFrame
+    movie_data = pd.DataFrame([{
+        'name': movie.name,
+        'director': movie.director,
+        'rating_value': movie.rating_value,
+        'released_event': movie.released_event,
+        'url': movie.url,
+        'image': movie.image
+    } for movie in movies])
+
+    # Perform the join based on the film name
+    combined_df = pd.merge(diary_data, movie_data, left_on='film', right_on='name', how='left')
+    combined_df.fillna('', inplace=True)
+
+    # Get stats string
+    mapping = {'×': 0,
+               "× ½": 1,
+               "× ★": 2,
+               "× ★½": 3,
+               "× ★★": 4,
+               "× ★★★★½": 9,
+               "× ★★★★½": 10,
+               "× ★★½": 5,
+               "× ★★★★": 8,
+               "× ★★★": 6,
+               "× ★★★½": 7
+               }
+    diary_data['numeric_rating'] = diary_data.rating.map(mapping)
+
+    # movies watched in 2024
+    yr_count = len(diary_data[diary_data["year"] == "2024"])
+    print(f"{username} watched {yr_count} movies in 2024")
+
+    # Get average of a user
+    avg = get_average(diary_data)
+    print(f"{username} on average rated movies {avg}")
+
+    # Get deviation of a user
+    dev = get_std_dev(diary_data)
+    print(f"{username} had a std deviation in their rating of {dev}")
+
+    return combined_df, None
+
+
 def get_top_rated_movies(df, top_n=20):
     # Ensure ratings are numeric and filter out entries with no rating
     df['rating'] = pd.to_numeric(df['rating'], errors='coerce')
@@ -19,21 +94,30 @@ def get_top_rated_movies(df, top_n=20):
 # import logging
 
 
-# def get_deviation(joined_table):
-#     joined_table = joined_table[joined_table["year"] == "2023"]
-#     mapping = {'×': 0,
-#                "× ★★★★½": 9,
-#                "× ★★½": 5,
-#                "× ★★★★": 8,
-#                "× ★★★": 6,
-#                "× ★★★½": 7
-#                }
-#     joined_table['numeric_rating'] = joined_table.rating.map(mapping)
-#     joined_table = joined_table[joined_table["numeric_rating"] != 0]
-#     joined_table["ratingValue"] = joined_table["ratingValue"].astype('float64')
-#     joined_table["deviation"] = abs(joined_table["numeric_rating"] - (joined_table["ratingValue"]*2))
-#     deviation = joined_table[joined_table["deviation"] >= 2.5]
-#     return deviation[["film", "ratingValue", "numeric_rating", "deviation"]]
+def get_average(user_data):
+    user_data = user_data[user_data["numeric_rating"] != 0]
+    return user_data['numeric_rating'].mean()
+
+def get_std_dev(user_data):
+    user_data = user_data[user_data["numeric_rating"] != 0]
+    return user_data['numeric_rating'].std()
+
+
+def get_deviation(joined_table):
+    joined_table = joined_table[joined_table["year"] == "2023"]
+    mapping = {'×': 0,
+               "× ★★★★½": 9,
+               "× ★★½": 5,
+               "× ★★★★": 8,
+               "× ★★★": 6,
+               "× ★★★½": 7
+               }
+    joined_table['numeric_rating'] = joined_table.rating.map(mapping)
+    joined_table = joined_table[joined_table["numeric_rating"] != 0]
+    joined_table["ratingValue"] = joined_table["ratingValue"].astype('float64')
+    joined_table["deviation"] = abs(joined_table["numeric_rating"] - (joined_table["ratingValue"]*2))
+    deviation = joined_table[joined_table["deviation"] >= 2.5]
+    return deviation[["film", "ratingValue", "numeric_rating", "deviation"]]
 
 
 # # Top production companies?

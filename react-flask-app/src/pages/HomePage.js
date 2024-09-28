@@ -45,7 +45,7 @@ const HomePage = () => {
       return;
     }
   
-    fetch(`/api/user_stats/${username}/`)
+    fetch(`/api/user_diary_combined/${username}/`)
       .then(response => {
         if (!response.ok) {
           return response.json().then(data => {
@@ -56,13 +56,14 @@ const HomePage = () => {
       })
       .then(data => {
         console.log(data);
-        setStats(data.top_movies); // Update stats state with the returned top movies
+        setStats(data.combined_data); // Update stats state with the combined data
       })
       .catch(error => {
         setValidationMessage(error.message); // Show error message
         console.error('Error:', error);
       });
   };
+  
 
   // Fetch movie data
   const handleGetMovies = () => {
@@ -132,7 +133,45 @@ const HomePage = () => {
       {stats && (
         <div>
           <h3>User Stats:</h3>
-          <p>{stats}</p> {/* Display the stats string here */}
+          {stats && stats.length > 0 && (
+  <table>
+    <thead>
+      <tr>
+        <th>Day</th>
+        <th>Month</th>
+        <th>Year</th>
+        <th>Film</th>
+        <th>Released</th>
+        <th>Rating</th>
+        <th>Review Link</th>
+        <th>Film Link</th>
+        <th>Director</th>
+        <th>Movie Rating</th>
+        <th>Movie URL</th>
+        <th>Image</th>
+      </tr>
+    </thead>
+    <tbody>
+      {stats.map((item, index) => (
+        <tr key={index}>
+          <td>{item.day}</td>
+          <td>{item.month}</td>
+          <td>{item.year}</td>
+          <td>{item.film}</td>
+          <td>{item.released}</td>
+          <td>{item.rating}</td>
+          <td><a href={item.review_link}>Review</a></td>
+          <td><a href={item.film_link}>Film Link</a></td>
+          <td>{item.director}</td>
+          <td>{item.rating_value}</td>
+          <td><a href={item.url}>Movie Link</a></td>
+          <td><img src={item.image} alt={item.film} width="50" /></td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+)}
+
         </div>
       )}
 
