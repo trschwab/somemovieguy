@@ -4,7 +4,7 @@ server {
     listen 80;
     listen [::]:80;
 
-    server_name 149.28.51.75;
+    server_name somemovieguy.com www.somemovieguy.com;
 
     root /var/www/react-flask-app/build;
     index index.html;
