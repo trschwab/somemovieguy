@@ -121,7 +121,6 @@ def get_user_stats_str(username):
     # Get deviation of a user
     dev = get_std_dev(diary_data)
     return_string += f"{username} had a std deviation in their rating of {dev}\n"
-    combined_df.to_csv("combined.csv")
 
     # Get top director
     dir = get_top_director(combined_df)
