@@ -1,7 +1,7 @@
 import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from utils.get_stats import get_top_rated_movies, get_combined_user_diary_and_movies
+from utils.get_stats import get_top_rated_movies, get_combined_user_diary_and_movies, get_user_stats_str
 from utils.table_definitions import db, migrate, UserDiary, User, Movie
 from utils.lbox_extraction import is_valid_username, get_user_data
 from utils.movie_extractions import get_a_movie_info
@@ -251,13 +251,29 @@ def get_movies():
 
 @app.route('/api/user_diary_combined/<username>/', methods=['GET'])
 def get_combined_user_diary(username):
-    combined_df, error_message = get_combined_user_diary_and_movies(username)
+    combined_df = get_combined_user_diary_and_movies(username)
     
     if combined_df is None:
-        return jsonify({'message': error_message}), 404
+        return jsonify({'message': "error"}), 404
 
     combined_data = combined_df.to_dict(orient='records')
     return jsonify({'combined_data': combined_data}), 200
+
+
+@app.route('/api/user_stats_string/<username>/', methods=['GET'])
+def get_stats_str(username):
+    return_string = get_user_stats_str(username)
+    
+    if return_string is None:
+        return jsonify({'message': "No string returned"}), 404
+
+    # Replace newlines with <br />
+    return_string = return_string.replace('\n', '<br />')
+
+    return jsonify({'return_string': return_string}), 200
+
+
+
 
 
 

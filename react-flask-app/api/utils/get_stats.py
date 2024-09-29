@@ -45,6 +45,46 @@ def get_combined_user_diary_and_movies(username):
     # Perform the join based on the film name
     combined_df = pd.merge(diary_data, movie_data, left_on='film', right_on='name', how='left')
     combined_df.fillna('', inplace=True)
+    return combined_df
+
+
+def get_user_stats_str(username):
+    # Get user by username
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return None, 'User not found!'
+    
+    # Query user diary entries
+    diary_entries = UserDiary.query.filter_by(user_id=user.id).all()
+    if not diary_entries:
+        return None, 'No diary entries found for this user.'
+
+    # Convert user diary entries to DataFrame
+    diary_data = pd.DataFrame([{
+        'day': entry.day,
+        'month': entry.month,
+        'year': entry.year,
+        'film': entry.film,
+        'released': entry.released,
+        'rating': entry.rating,
+        'review_link': entry.review_link,
+        'film_link': entry.film_link
+    } for entry in diary_entries])
+
+    # Query all movies from the Movie table
+    movies = Movie.query.all()
+    if not movies:
+        return None, 'No movies found!'
+
+    # Convert movie entries to DataFrame
+    movie_data = pd.DataFrame([{
+        'name': movie.name,
+        'director': movie.director,
+        'rating_value': movie.rating_value,
+        'released_event': movie.released_event,
+        'url': movie.url,
+        'image': movie.image
+    } for movie in movies])
 
     # Get stats string
     mapping = {
@@ -63,32 +103,42 @@ def get_combined_user_diary_and_movies(username):
 
     diary_data['numeric_rating'] = diary_data.rating.map(mapping)
 
+    # Perform the join based on the film name
+    combined_df = pd.merge(diary_data, movie_data, left_on='film', right_on='name', how='left')
+    combined_df.fillna('', inplace=True)
+
+    return_string = ""
+
     # movies watched in 2024
     yr_count = len(diary_data[diary_data["year"] == "2024"])
-    print(f"{username} watched {yr_count} movies in 2024")
+    
+    return_string += f"{username} watched {yr_count} movies in 2024\n"
 
     # Get average of a user
     avg = get_average(diary_data)
-    print(f"{username} on average rated movies {avg}")
+    return_string += f"{username} on average rated movies {avg}\n"
 
     # Get deviation of a user
     dev = get_std_dev(diary_data)
-    print(f"{username} had a std deviation in their rating of {dev}")
+    return_string += f"{username} had a std deviation in their rating of {dev}\n"
     combined_df.to_csv("combined.csv")
 
     # Get top director
     dir = get_top_director(combined_df)
-    print(f"{username} has a top director of \n{dir}")
+    return_string += f"{username} has a top director of \n{dir}\n"
 
     # Get reviews
     review_count = get_reviews_per_year(diary_data, "2024")
-    print(f"{username} left {review_count} reviews in 2024")
+    return_string += f"{username} left {review_count} reviews in 2024\n"
 
     # Get hot takes
     hot_takes_str = get_rating_deviations(combined_df)
-    print(f"{username} deviated from mainstream ratings by >2 stars for these movies:\n{hot_takes_str}")
+    return_string += f"{username} deviated from mainstream ratings by >3 stars for these movies:\n{hot_takes_str}\n"
 
-    return combined_df, None
+    print(return_string)
+
+    return return_string
+
 
 
 def get_reviews_per_year(df, year="2024"):

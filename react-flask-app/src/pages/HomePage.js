@@ -4,8 +4,18 @@ const HomePage = () => {
   const [username, setUsername] = useState('');
   const [validationMessage, setValidationMessage] = useState('');
   const [userData, setUserData] = useState([]);
-  const [stats, setStats] = useState(null); // To hold the statistics
-  const [movieData, setMovieData] = useState([]); // To hold the movie data
+  const [stats, setStats] = useState(null);
+  const [statsString, setStatsString] = useState(''); // To hold the stats string
+  const [movieData, setMovieData] = useState([]);
+
+  const formatStatsString = (str) => {
+    return str.split('\n').map((line, index) => (
+      <span key={index}>
+        {line}
+        <br />
+      </span>
+    ));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -18,24 +28,24 @@ const HomePage = () => {
       },
       body: JSON.stringify({ username }),
     })
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(data => {
-          throw new Error(data.message || 'Something went wrong');
-        });
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log(data);
-      setValidationMessage(data.message); // Show success message
-      setUserData(data.user_data); // Update state with the user's diary entries
-      setUsername(''); // Clear input after submission
-    })
-    .catch(error => {
-      setValidationMessage(error.message); // Show error message
-      console.error('Error:', error);
-    });
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Something went wrong');
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log(data);
+        setValidationMessage(data.message);
+        setUserData(data.user_data);
+        setUsername('');
+      })
+      .catch(error => {
+        setValidationMessage(error.message);
+        console.error('Error:', error);
+      });
   };
 
   const handleGetStats = () => {
@@ -44,7 +54,7 @@ const HomePage = () => {
       setValidationMessage('Please enter a username first!');
       return;
     }
-  
+
     fetch(`/api/user_diary_combined/${username}/`)
       .then(response => {
         if (!response.ok) {
@@ -56,18 +66,42 @@ const HomePage = () => {
       })
       .then(data => {
         console.log(data);
-        setStats(data.combined_data); // Update stats state with the combined data
+        setStats(data.combined_data);
       })
       .catch(error => {
-        setValidationMessage(error.message); // Show error message
+        setValidationMessage(error.message);
         console.error('Error:', error);
       });
   };
-  
 
-  // Fetch movie data
+  const handleGetStatsStr = () => {
+    setValidationMessage('');
+    if (!username) {
+      setValidationMessage('Please enter a username first!');
+      return;
+    }
+
+    fetch(`/api/user_stats_string/${username}/`)
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Something went wrong');
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Stats String Data:', data);
+        setStatsString(JSON.stringify(data.return_string, null, 2));
+      })      
+      .catch(error => {
+        setValidationMessage(error.message);
+        console.error('Error:', error);
+      });
+  };
+
   const handleGetMovies = () => {
-    fetch('/api/movies/') // Assuming your Flask API has this endpoint
+    fetch('/api/movies/')
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch movies.');
@@ -76,10 +110,10 @@ const HomePage = () => {
       })
       .then(data => {
         console.log(data);
-        setMovieData(data.movies); // Assuming the movie data is under 'movies'
+        setMovieData(data.movies);
       })
       .catch(error => {
-        setValidationMessage(error.message); // Show error message
+        setValidationMessage(error.message);
         console.error('Error:', error);
       });
   };
@@ -97,83 +131,62 @@ const HomePage = () => {
         <button type="submit">Add User</button>
       </form>
       {validationMessage && <p>{validationMessage}</p>}
-      {userData.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Day</th>
-              <th>Month</th>
-              <th>Year</th>
-              <th>Film</th>
-              <th>Released</th>
-              <th>Rating</th>
-              <th>Review Link</th>
-              <th>Film Link</th>
-            </tr>
-          </thead>
-          <tbody>
-            {userData.map((item, index) => (
-              <tr key={index}>
-                <td>{item.name}</td>
-                <td>{item.day}</td>
-                <td>{item.month}</td>
-                <td>{item.year}</td>
-                <td>{item.film}</td>
-                <td>{item.released}</td>
-                <td>{item.rating}</td>
-                <td><a href={item.review_link}>Review</a></td>
-                <td><a href={item.film_link}>Film Link</a></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+
+      {/* Button to get stats */}
       <button onClick={handleGetStats}>Get Stats</button>
       {stats && (
         <div>
           <h3>User Stats:</h3>
-          {stats && stats.length > 0 && (
-  <table>
-    <thead>
-      <tr>
-        <th>Day</th>
-        <th>Month</th>
-        <th>Year</th>
-        <th>Film</th>
-        <th>Released</th>
-        <th>Rating</th>
-        <th>Review Link</th>
-        <th>Film Link</th>
-        <th>Director</th>
-        <th>Movie Rating</th>
-        <th>Movie URL</th>
-        <th>Image</th>
-      </tr>
-    </thead>
-    <tbody>
-      {stats.map((item, index) => (
-        <tr key={index}>
-          <td>{item.day}</td>
-          <td>{item.month}</td>
-          <td>{item.year}</td>
-          <td>{item.film}</td>
-          <td>{item.released}</td>
-          <td>{item.rating}</td>
-          <td><a href={item.review_link}>Review</a></td>
-          <td><a href={item.film_link}>Film Link</a></td>
-          <td>{item.director}</td>
-          <td>{item.rating_value}</td>
-          <td><a href={item.url}>Movie Link</a></td>
-          <td><img src={item.image} alt={item.film} width="50" /></td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-)}
-
+          {stats.length > 0 && (
+            <table>
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Month</th>
+                  <th>Year</th>
+                  <th>Film</th>
+                  <th>Released</th>
+                  <th>Rating</th>
+                  <th>Review Link</th>
+                  <th>Film Link</th>
+                  <th>Director</th>
+                  <th>Movie Rating</th>
+                  <th>Movie URL</th>
+                  <th>Image</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.day}</td>
+                    <td>{item.month}</td>
+                    <td>{item.year}</td>
+                    <td>{item.film}</td>
+                    <td>{item.released}</td>
+                    <td>{item.rating}</td>
+                    <td><a href={item.review_link}>Review</a></td>
+                    <td><a href={item.film_link}>Film Link</a></td>
+                    <td>{item.director}</td>
+                    <td>{item.rating_value}</td>
+                    <td><a href={item.url}>Movie Link</a></td>
+                    <td><img src={item.image} alt={item.film} width="50" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
+
+      {/* Button to get stats string */}
+      <button onClick={handleGetStatsStr}>Get Stats String</button>
+      {statsString && (
+  <div>
+    <h3>Stats String:</h3>
+    <div dangerouslySetInnerHTML={{ __html: statsString }} />
+  </div>
+)}
+
 
       {/* Button to fetch and display movie table */}
       <button onClick={handleGetMovies}>Get Movies</button>
