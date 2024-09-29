@@ -1,4 +1,5 @@
 import pandas as pd
+import ast
 
 import pandas as pd
 from utils.table_definitions import db, UserDiary, Movie, User
@@ -46,18 +47,20 @@ def get_combined_user_diary_and_movies(username):
     combined_df.fillna('', inplace=True)
 
     # Get stats string
-    mapping = {'×': 0,
-               "× ½": 1,
-               "× ★": 2,
-               "× ★½": 3,
-               "× ★★": 4,
-               "× ★★★★½": 9,
-               "× ★★★★½": 10,
-               "× ★★½": 5,
-               "× ★★★★": 8,
-               "× ★★★": 6,
-               "× ★★★½": 7
-               }
+    mapping = {
+        '×': 0,
+        '× ½': 1,
+        '× ★': 2,
+        '× ★½': 3,
+        '× ★★': 4,
+        "× ★★½": 5,
+        "× ★★★": 6,
+        "× ★★★½": 7,
+        "× ★★★★": 8,
+        "× ★★★★½": 9,
+        '× ★★★★★': 10
+    }
+
     diary_data['numeric_rating'] = diary_data.rating.map(mapping)
 
     # movies watched in 2024
@@ -71,8 +74,49 @@ def get_combined_user_diary_and_movies(username):
     # Get deviation of a user
     dev = get_std_dev(diary_data)
     print(f"{username} had a std deviation in their rating of {dev}")
+    combined_df.to_csv("combined.csv")
+
+    # Get top director
+    dir = get_top_director(combined_df)
+    print(f"{username} has a top director of \n{dir}")
+
+    # Get reviews
+    review_count = get_reviews_per_year(diary_data, "2024")
+    print(f"{username} left {review_count} reviews in 2024")
+
+    # Get hot takes
+    hot_takes_str = get_rating_deviations(combined_df)
+    print(f"{username} deviated from mainstream ratings by >2 stars for these movies:\n{hot_takes_str}")
 
     return combined_df, None
+
+
+def get_reviews_per_year(df, year="2024"):
+    return len(df[(df["review_link"].notna()) &
+                  (df["review_link"] != "") &
+                  (df["year"] == year)])
+
+def get_top_director(combined_df):
+    directors = combined_df["director"]
+    director_list = list(directors)
+    director_set = []
+
+    for element in director_list:
+        try:
+            director_set += ast.literal_eval(element)
+        except Exception as e:
+            continue
+            # print("Error:", e)
+            # print("director likely NA type")
+
+    df = pd.DataFrame.from_dict(director_set)
+    actor_stats = df.groupby(["name"]).size().reset_index(name='counts')
+    top_5 = actor_stats.sort_values("counts", ascending=False).head(5)
+    
+    # Create a string representation of the top 5 directors
+    string_top_5 = top_5.to_string(index=False)
+    
+    return string_top_5
 
 
 def get_top_rated_movies(df, top_n=20):
@@ -92,6 +136,35 @@ def get_top_rated_movies(df, top_n=20):
 # import pandas as pd
 # import requests
 # import logging
+
+def get_rating_deviations(df):
+    df = df[df["numeric_rating"] != 0]
+    
+    # Replace any unmapped ratings (which result in NaN) with a default value, e.g., 0
+    df['numeric_rating'].fillna(0, inplace=True)
+
+    # Convert numeric_rating to a numeric type
+    df['numeric_rating'] = pd.to_numeric(df['numeric_rating'], errors='coerce')
+
+    # Ensure rating_value is numeric
+    df['rating_value'] = pd.to_numeric(df['rating_value'], errors='coerce')
+
+    # Drop rows where rating_value or numeric_rating is NaN (could not be converted)
+    df.dropna(subset=['numeric_rating', 'rating_value'], inplace=True)
+
+    # Calculate the deviation between numeric_rating and rating_value * 2
+    deviation_mask = (df['numeric_rating'] - (df['rating_value'] * 2)).abs() > 3
+
+    # Filter the dataframe for deviations greater than 2
+    deviated_df = df[deviation_mask]
+    
+    # Format the results into a string
+    result_string = ""
+    for _, row in deviated_df.iterrows():
+        result_string += f"Film: {row['film']}, Rating: {row['numeric_rating']}, Average Rating: {row['rating_value'] * 2}\n"
+    
+    return result_string
+
 
 
 def get_average(user_data):
