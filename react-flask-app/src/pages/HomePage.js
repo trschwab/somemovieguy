@@ -20,8 +20,8 @@ const HomePage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setValidationMessage('');
-
+    setValidationMessage('This might take a few minutes...');
+  
     fetch('/api/users/', {
       method: 'POST',
       headers: {
@@ -48,6 +48,7 @@ const HomePage = () => {
         console.error('Error:', error);
       });
   };
+  
 
   const handleGetStats = () => {
     setValidationMessage('');
@@ -150,13 +151,13 @@ const HomePage = () => {
   return (
     <div className="HomePage">
       <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Enter username"
-          required
-        />
+      <input
+        type="text"
+        value={username}
+        onChange={(e) => setUsername(e.target.value.toLowerCase())}
+        placeholder="Enter username"
+        required
+      />
         <button type="submit">Add User</button>
       </form>
       {validationMessage && <p>{validationMessage}</p>}

@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from utils.table_definitions import Movie
 
 
 def get_page(url):
@@ -16,11 +17,31 @@ def gen_film_url(a_str):
     return f"https://letterboxd.com/film/{'/'.join(a_str.split('/')[2:])}"
 
 
-def get_a_movie_info(url: str) -> pd.DataFrame:
+def get_a_movie_info(url: str, film: str) -> pd.DataFrame:
     '''
     Takes in a movie URL like "https://letterboxd.com/film/goon/"
     Returns the DataFrame of the movie's info.
     '''
+    # Retrieve the Movie DB
+    # Query all movies from the Movie table
+    movies = Movie.query.all()
+    if not movies:
+        return None, 'No movies found!'
+
+    # Convert movie entries to DataFrame
+    movie_data = pd.DataFrame([{
+        'name': movie.name,
+        'director': movie.director,
+        'rating_value': movie.rating_value,
+        'released_event': movie.released_event,
+        'url': movie.url,
+        'image': movie.image
+    } for movie in movies])
+
+    if film in movie_data["name"].unique():
+        print(f"{film} found in movie_data, skipping")
+        return
+
     soup = get_page(url)
     i = 0
     begin = 0

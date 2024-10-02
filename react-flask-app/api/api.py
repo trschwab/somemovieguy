@@ -102,7 +102,7 @@ def add_user():
             if row['film_link']:
                 try:
                     url = f"https://www.letterboxd.com/{'/'.join(row['film_link'].split('/')[2:])}"
-                    movie_info_df = get_a_movie_info(url)
+                    movie_info_df = get_a_movie_info(url, row['film'])
                     if movie_info_df is not None:
                         # Create a new Movie object and add to the database
                         existing_movie = Movie.query.filter_by(url=movie_info_df['url'][0]).first()
@@ -166,7 +166,7 @@ def add_user():
         if row['film_link']:
             try:
                 url = f"https://www.letterboxd.com/{'/'.join(row['film_link'].split('/')[2:])}"
-                movie_info_df = get_a_movie_info(url)
+                movie_info_df = get_a_movie_info(url, row['film'])
                 if movie_info_df is not None:
                     # Create a new Movie object and add to the database
                     existing_movie = Movie.query.filter_by(url=movie_info_df['url'][0]).first()
