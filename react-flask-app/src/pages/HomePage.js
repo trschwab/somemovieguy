@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import handleSubmit from '../handlers/handleSubmit';
+import handleGetStats from '../handlers/handleGetStats';
+import handleGetTopster from '../handlers/handleGetTopster';
+import handleGetStatsStr from '../handlers/handleGetStatsStr';
+import handleGetMovies from '../handlers/handleGetMovies';
 
 const HomePage = () => {
   const [username, setUsername] = useState('');
@@ -18,152 +23,42 @@ const HomePage = () => {
     ));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setValidationMessage('This might take a few minutes...');
-  
-    fetch('/api/users/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username }),
-    })
-      .then(response => {
-        if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.message || 'Something went wrong');
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log(data);
-        setValidationMessage(data.message);
-        setUserData(data.user_data);
-        setUsername('');
-      })
-      .catch(error => {
-        setValidationMessage(error.message);
-        console.error('Error:', error);
-      });
-  };
-  
-
-  const handleGetStats = () => {
-    setValidationMessage('');
-    if (!username) {
-      setValidationMessage('Please enter a username first!');
-      return;
-    }
-
-    fetch(`/api/user_diary_combined/${username}/`)
-      .then(response => {
-        if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.message || 'Something went wrong');
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log(data);
-        setStats(data.combined_data);
-      })
-      .catch(error => {
-        setValidationMessage(error.message);
-        console.error('Error:', error);
-      });
+  const handleFormSubmit = (e) => {
+    handleSubmit(e, username, setValidationMessage, setUserData, setUsername);
   };
 
-
-  const handleGetTopster = () => {
-    setValidationMessage('');
-    if (!username) {
-      setValidationMessage('Please enter a username first!');
-      return;
-    }
-  
-    fetch(`/api/get_topster/${username}/`)
-      .then(response => {
-        if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.message || 'Something went wrong');
-          });
-        }
-        return response.blob();  // Get the response as a blob
-      })
-      .then(blob => {
-        const imageUrl = URL.createObjectURL(blob);  // Create a URL for the image blob
-        setTopsterImageUrl(imageUrl);  // Set the URL for the image
-      })
-      .catch(error => {
-        setValidationMessage(error.message);
-        console.error('Error:', error);
-      });
+  const handleStatsButtonClick = () => {
+    handleGetStats(username, setValidationMessage, setStats);
   };
 
-
-  const handleGetStatsStr = () => {
-    setValidationMessage('');
-    if (!username) {
-      setValidationMessage('Please enter a username first!');
-      return;
-    }
-
-    fetch(`/api/user_stats_string/${username}/`)
-      .then(response => {
-        if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.message || 'Something went wrong');
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Stats String Data:', data);
-        setStatsString(JSON.stringify(data.return_string, null, 2));
-      })      
-      .catch(error => {
-        setValidationMessage(error.message);
-        console.error('Error:', error);
-      });
+  const handleTopsterButtonClick = () => {
+    handleGetTopster(username, setValidationMessage, setTopsterImageUrl);
   };
 
-  const handleGetMovies = () => {
-    fetch('/api/movies/')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch movies.');
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log(data);
-        setMovieData(data.movies);
-      })
-      .catch(error => {
-        setValidationMessage(error.message);
-        console.error('Error:', error);
-      });
+  const handleStatsStringButtonClick = () => {
+    handleGetStatsStr(username, setValidationMessage, setStatsString);
+  };
+
+  const handleMoviesButtonClick = () => {
+    handleGetMovies(setValidationMessage, setMovieData);
   };
 
   return (
     <div className="HomePage">
-      <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value.toLowerCase())}
-        placeholder="Enter username"
-        required
-      />
+      <form onSubmit={handleFormSubmit}>
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value.toLowerCase())}
+          placeholder="Enter username"
+          required
+        />
         <button type="submit">Add User</button>
       </form>
       {validationMessage && <p>{validationMessage}</p>}
 
       {/* Button to get stats */}
-      <button onClick={handleGetStats}>Get Stats</button>
+      <button onClick={handleStatsButtonClick}>Get Stats</button>
       {stats && (
         <div>
           <h3>User Stats:</h3>
@@ -209,15 +104,16 @@ const HomePage = () => {
       )}
 
       {/* Button to get stats string */}
-      <button onClick={handleGetStatsStr}>Get Stats String</button>
+      <button onClick={handleStatsStringButtonClick}>Get Stats String</button>
       {statsString && (
-  <div>
-    <h3>Stats String:</h3>
-    <div dangerouslySetInnerHTML={{ __html: statsString }} />
-  </div>
-)}
+        <div>
+          <h3>Stats String:</h3>
+          <div dangerouslySetInnerHTML={{ __html: statsString }} />
+        </div>
+      )}
 
-<button onClick={handleGetTopster}>Get User Topster</button>
+      {/* Button to get user topster */}
+      <button onClick={handleTopsterButtonClick}>Get User Topster</button>
       {validationMessage && <p>{validationMessage}</p>}
       {topsterImageUrl && (
         <div>
@@ -235,9 +131,8 @@ const HomePage = () => {
         </div>
       )}
 
-
       {/* Button to fetch and display movie table */}
-      <button onClick={handleGetMovies}>Get Movies</button>
+      <button onClick={handleMoviesButtonClick}>Get Movies</button>
       {movieData.length > 0 && (
         <table>
           <thead>
