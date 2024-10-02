@@ -5,7 +5,8 @@ const HomePage = () => {
   const [validationMessage, setValidationMessage] = useState('');
   const [userData, setUserData] = useState([]);
   const [stats, setStats] = useState(null);
-  const [statsString, setStatsString] = useState(''); // To hold the stats string
+  const [topsterImageUrl, setTopsterImageUrl] = useState('');
+  const [statsString, setStatsString] = useState('');
   const [movieData, setMovieData] = useState([]);
 
   const formatStatsString = (str) => {
@@ -73,6 +74,34 @@ const HomePage = () => {
         console.error('Error:', error);
       });
   };
+
+
+  const handleGetTopster = () => {
+    setValidationMessage('');
+    if (!username) {
+      setValidationMessage('Please enter a username first!');
+      return;
+    }
+  
+    fetch(`/api/get_topster/${username}/`)
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Something went wrong');
+          });
+        }
+        return response.blob();  // Get the response as a blob
+      })
+      .then(blob => {
+        const imageUrl = URL.createObjectURL(blob);  // Create a URL for the image blob
+        setTopsterImageUrl(imageUrl);  // Set the URL for the image
+      })
+      .catch(error => {
+        setValidationMessage(error.message);
+        console.error('Error:', error);
+      });
+  };
+
 
   const handleGetStatsStr = () => {
     setValidationMessage('');
@@ -186,6 +215,24 @@ const HomePage = () => {
     <div dangerouslySetInnerHTML={{ __html: statsString }} />
   </div>
 )}
+
+<button onClick={handleGetTopster}>Get User Topster</button>
+      {validationMessage && <p>{validationMessage}</p>}
+      {topsterImageUrl && (
+        <div>
+          <h3>User Topster:</h3>
+          <img 
+            src={topsterImageUrl} 
+            alt="User Topster" 
+            style={{ 
+              maxHeight: '100vh', // Limit the height to the viewport height
+              width: 'auto', // Maintain aspect ratio by adjusting width automatically
+              display: 'block', // Prevent inline spacing issues
+              margin: '0 auto' // Center the image horizontally
+            }} 
+          />
+        </div>
+      )}
 
 
       {/* Button to fetch and display movie table */}

@@ -4,8 +4,11 @@ from flask_cors import CORS
 from utils.get_stats import get_top_rated_movies, get_combined_user_diary_and_movies, get_user_stats_str
 from utils.table_definitions import db, migrate, UserDiary, User, Movie
 from utils.lbox_extraction import is_valid_username, get_user_data
+from utils.get_topster import get_topster_helper
 from utils.movie_extractions import get_a_movie_info
 from sqlalchemy import and_
+from flask import url_for
+from flask import Response
 
 import pandas as pd
 
@@ -273,8 +276,15 @@ def get_stats_str(username):
     return jsonify({'return_string': return_string}), 200
 
 
+@app.route('/api/get_topster/<username>/', methods=['GET'])
+def get_topster(username):
+    img_data = get_topster_helper(username)
+    
+    if img_data is None:
+        return jsonify({'message': "No image generated"}), 404
 
-
+    # Return the image binary data as a response
+    return Response(img_data, mimetype='image/png')
 
 
 if __name__ == '__main__':
