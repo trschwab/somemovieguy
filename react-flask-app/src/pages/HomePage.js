@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './HomePage.css'; // Importing the CSS file
+import { Link } from "react-router-dom";
+import './styles_v2.css';
+import styles from './styles';
 
 const HomePage = () => {
   const [username, setUsername] = useState('');
@@ -10,6 +14,8 @@ const HomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStatsMessage, setLoadingStatsMessage] = useState('');
   const [loadingTopsterMessage, setLoadingTopsterMessage] = useState('');
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,6 +85,19 @@ const HomePage = () => {
 
   return (
     <div className="home-page">
+      <header style={styles.header}>
+        {/* <Link to="/" style={styles.logo}>SomeMovieGuy</Link> */}
+        <nav>
+          <ul style={styles.navLinks}>
+            <li>
+              <Link to="/" style={styles.navLink}>Home</Link>
+            </li>
+            <li>
+              <Link to="/about" style={styles.navLink}>About</Link>
+            </li>
+          </ul>
+        </nav>
+      </header>
       <form onSubmit={handleSubmit} className="username-form">
         <input
           type="text"
