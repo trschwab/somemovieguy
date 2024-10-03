@@ -210,7 +210,7 @@ def get_rating_deviations(df):
     # Format the results into a string
     result_string = ""
     for _, row in deviated_df.iterrows():
-        result_string += f"Film: {row['film']}, Rating: {row['numeric_rating']}, Average Rating: {row['rating_value'] * 2}\n"
+        result_string += f"{row['film']}:\n    Rating: {row['numeric_rating']}\n    Average Rating: {row['rating_value'] * 2}\n"
     
     return result_string
 

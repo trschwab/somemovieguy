@@ -125,7 +125,7 @@ def add_user():
         # Return the user data along with a success message
         user_data_json = user_data_df.to_dict(orient='records')
         return jsonify({
-            'message': 'Username already exists and diary entries updated!',
+            'message': 'Username processed; diary entries updated!',
             'user_data': user_data_json
         }), 200
 

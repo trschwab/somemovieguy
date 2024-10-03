@@ -1,163 +1,116 @@
 import React, { useState } from 'react';
-import handleSubmit from '../handlers/handleSubmit';
-import handleGetStats from '../handlers/handleGetStats';
-import handleGetTopster from '../handlers/handleGetTopster';
-import handleGetStatsStr from '../handlers/handleGetStatsStr';
-import handleGetMovies from '../handlers/handleGetMovies';
+import './HomePage.css'; // Importing the CSS file
 
 const HomePage = () => {
   const [username, setUsername] = useState('');
   const [validationMessage, setValidationMessage] = useState('');
   const [userData, setUserData] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [topsterImageUrl, setTopsterImageUrl] = useState('');
   const [statsString, setStatsString] = useState('');
-  const [movieData, setMovieData] = useState([]);
+  const [topsterImageUrl, setTopsterImageUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatsMessage, setLoadingStatsMessage] = useState('');
+  const [loadingTopsterMessage, setLoadingTopsterMessage] = useState('');
 
-  const formatStatsString = (str) => {
-    return str.split('\n').map((line, index) => (
-      <span key={index}>
-        {line}
-        <br />
-      </span>
-    ));
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleFormSubmit = (e) => {
-    handleSubmit(e, username, setValidationMessage, setUserData, setUsername);
-  };
+    // Clear previously displayed stats and topster
+    setStatsString('');
+    setTopsterImageUrl('');
+    setValidationMessage('This might take a few minutes...');
+    setLoadingStatsMessage('');
+    setLoadingTopsterMessage('');
+    setIsLoading(true);
+  
+    try {
+      const userResponse = await fetch('/api/users/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      });
 
-  const handleStatsButtonClick = () => {
-    handleGetStats(username, setValidationMessage, setStats);
-  };
+      if (!userResponse.ok) {
+        throw new Error('Oops, sorry about that, there was an internal error.');
+      }
 
-  const handleTopsterButtonClick = () => {
-    handleGetTopster(username, setValidationMessage, setTopsterImageUrl);
-  };
+      const userData = await userResponse.json();
+      console.log(userData);
+      setUserData(userData.user_data);
+      setValidationMessage(userData.message);
+      
+      // Set the loading message for stats
+      setLoadingStatsMessage('Loading stats...');
 
-  const handleStatsStringButtonClick = () => {
-    handleGetStatsStr(username, setValidationMessage, setStatsString);
-  };
+      const statsResponse = await fetch(`/api/user_stats_string/${username}/`);
 
-  const handleMoviesButtonClick = () => {
-    handleGetMovies(setValidationMessage, setMovieData);
+      if (!statsResponse.ok) {
+        throw new Error('Oops, sorry about that, there was an internal error.');
+      }
+
+      const statsData = await statsResponse.json();
+      console.log('Stats String Data:', statsData);
+      setStatsString(JSON.stringify(statsData.return_string, null, 2));
+      setLoadingStatsMessage('');
+      
+      // Set the loading message for topster
+      setLoadingTopsterMessage('Loading topster...');
+
+      const topsterResponse = await fetch(`/api/get_topster/${username}/`);
+
+      if (!topsterResponse.ok) {
+        throw new Error('Oops, sorry about that, there was an internal error.');
+      }
+
+      const topsterBlob = await topsterResponse.blob();
+      const imageUrl = URL.createObjectURL(topsterBlob);
+      setTopsterImageUrl(imageUrl);
+      setLoadingTopsterMessage('');
+
+      setUsername('');
+    } catch (error) {
+      setValidationMessage(error.message);
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="HomePage">
-      <form onSubmit={handleFormSubmit}>
+    <div className="home-page">
+      <form onSubmit={handleSubmit} className="username-form">
         <input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase())}
-          placeholder="Enter username"
+          placeholder="Enter your username"
           required
+          disabled={isLoading}
+          className="username-input"
         />
-        <button type="submit">Add User</button>
+        {!isLoading && <button type="submit" className="submit-button">Submit</button>}
       </form>
-      {validationMessage && <p>{validationMessage}</p>}
+      {validationMessage && <p className="validation-message">{validationMessage}</p>}
+      {loadingStatsMessage && <p className="loading-message">{loadingStatsMessage}</p>}
+      {loadingTopsterMessage && <p className="loading-message">{loadingTopsterMessage}</p>}
 
-      {/* Button to get stats */}
-      <button onClick={handleStatsButtonClick}>Get Stats</button>
-      {stats && (
-        <div>
-          <h3>User Stats:</h3>
-          {stats.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>Month</th>
-                  <th>Year</th>
-                  <th>Film</th>
-                  <th>Released</th>
-                  <th>Rating</th>
-                  <th>Review Link</th>
-                  <th>Film Link</th>
-                  <th>Director</th>
-                  <th>Movie Rating</th>
-                  <th>Movie URL</th>
-                  <th>Image</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.day}</td>
-                    <td>{item.month}</td>
-                    <td>{item.year}</td>
-                    <td>{item.film}</td>
-                    <td>{item.released}</td>
-                    <td>{item.rating}</td>
-                    <td><a href={item.review_link}>Review</a></td>
-                    <td><a href={item.film_link}>Film Link</a></td>
-                    <td>{item.director}</td>
-                    <td>{item.rating_value}</td>
-                    <td><a href={item.url}>Movie Link</a></td>
-                    <td><img src={item.image} alt={item.film} width="50" /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {/* Button to get stats string */}
-      <button onClick={handleStatsStringButtonClick}>Get Stats String</button>
       {statsString && (
-        <div>
+        <div className="stats-container">
           <h3>Stats String:</h3>
-          <div dangerouslySetInnerHTML={{ __html: statsString }} />
+          <div className="stats-content" dangerouslySetInnerHTML={{ __html: statsString }} />
         </div>
       )}
 
-      {/* Button to get user topster */}
-      <button onClick={handleTopsterButtonClick}>Get User Topster</button>
-      {validationMessage && <p>{validationMessage}</p>}
       {topsterImageUrl && (
-        <div>
+        <div className="topster-container">
           <h3>User Topster:</h3>
           <img 
             src={topsterImageUrl} 
             alt="User Topster" 
-            style={{ 
-              maxHeight: '100vh', // Limit the height to the viewport height
-              width: 'auto', // Maintain aspect ratio by adjusting width automatically
-              display: 'block', // Prevent inline spacing issues
-              margin: '0 auto' // Center the image horizontally
-            }} 
+            className="topster-image"
           />
         </div>
-      )}
-
-      {/* Button to fetch and display movie table */}
-      <button onClick={handleMoviesButtonClick}>Get Movies</button>
-      {movieData.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Image</th>
-              <th>Name</th>
-              <th>Director</th>
-              <th>Rating</th>
-              <th>Released</th>
-              <th>URL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {movieData.map((movie, index) => (
-              <tr key={index}>
-                <td><img src={movie.image} alt={movie.name} width="50" /></td>
-                <td>{movie.name}</td>
-                <td>{movie.director}</td>
-                <td>{movie.rating_value}</td>
-                <td>{movie.released_event}</td>
-                <td><a href={movie.url}>Movie Link</a></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       )}
     </div>
   );
