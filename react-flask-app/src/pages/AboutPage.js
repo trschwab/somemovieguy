@@ -2,38 +2,31 @@ import React from "react";
 import { Link } from "react-router-dom";
 import './styles_v2.css';
 import styles from './styles';
+import BasicExample from '../components/NavbarComponent';
 
-const HomePage = () => {
+const AboutPage = () => {
 
   return (
     <div style={styles.container}>
-      {/* Navigation Header */}
-      <header style={styles.header}>
-        {/* <Link to="/" style={styles.logo}>SomeMovieGuy</Link> */}
-        <nav>
-          <ul style={styles.navLinks}>
-            <li>
-              <Link to="/" style={styles.navLink}>Home</Link>
-            </li>
-            <li>
-              <Link to="/about" style={styles.navLink}>About</Link>
-            </li>
-          </ul>
-        </nav>
-      </header>
+        <BasicExample />
 
       {/* Main Content */}
       <div style={styles.contentContainer}>
         <div style={styles.contentBox}>
-          {/* <h3 style={styles.heading}>Hi, I’m Troy and this is my website.</h3> */}
           <p style={styles.paragraph}>
-              Some Movie Guy
+              SomeMovieGuy
               <br></br><br></br>
-              About
+              This is a basic implementation of a small project I've worked on, on and off, for a little while now. 
+              I've slowly become a more and more active Letterboxd user over the past few years and an implementation of 
+              reading their statistics and generating topsters for users was something I found to be a useful exercise in 
+              my coding life, and something I found to be very interesting and fun. The website originally was just some 
+              poorly organized code from Vim I had printing in the terminal, and slowly it transformed into raw HTML, then 
+              Django, and now in it's final form as React and Flask code.
               <br></br><br></br>
-              More info
+              I really hope to keep working on this slowly and surely, making more efficient code, cleaner oriented designs,
+              more user friendly experiences, and more features that movie lovers can use.
               <br></br><br></br>
-              Here
+              TODO
             </p>
         </div>
       </div>
@@ -41,4 +34,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default AboutPage;
