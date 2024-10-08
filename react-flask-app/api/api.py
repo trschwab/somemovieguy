@@ -64,83 +64,40 @@ def add_user():
     if not is_valid_username(username):
         return jsonify({'message': 'Username is invalid on Letterboxd!'}), 400
 
-    # Check if username is valid
     if not username:
         return jsonify({'message': 'Username is required!'}), 400
 
-    # Check for existing username
     existing_user = User.query.filter_by(username=username).first()
+
     if existing_user:
         user_data_df = get_user_data(username)
-        # Update or add diary entries to the database
-        for index, row in user_data_df.iterrows():
-            # Check for existing diary entry with the same user_id and other key attributes
-            existing_entry = UserDiary.query.filter_by(
-                user_id=existing_user.id,
-                day=row['day'],
-                month=row['month'],
-                year=row['year'],
-                film=row['film']
-            ).first()
+        update_diary_entries(existing_user.id, user_data_df)
 
-            if existing_entry is None:
-                # If no existing entry is found, add it
-                diary_entry = UserDiary(
-                    user_id=existing_user.id,
-                    day=row['day'],
-                    month=row['month'],
-                    year=row['year'],
-                    film=row['film'],
-                    released=row.get('released', None),
-                    rating=row.get('rating', None),
-                    review_link=row.get('review_link', None),
-                    film_link=row.get('film_link', None)
-                )
-                db.session.add(diary_entry)
-
-            # Fetch movie info if film_link exists
-            if row['film_link']:
-                try:
-                    url = f"https://www.letterboxd.com/{'/'.join(row['film_link'].split('/')[2:])}"
-                    movie_info_df = get_a_movie_info(url, row['film'])
-                    if movie_info_df is not None:
-                        # Create a new Movie object and add to the database
-                        existing_movie = Movie.query.filter_by(url=movie_info_df['url'][0]).first()
-                        if not existing_movie:
-                            new_movie = Movie(
-                                name=movie_info_df['name'][0],
-                                director=movie_info_df['director'][0],
-                                rating_value=movie_info_df['ratingValue'][0],
-                                released_event=movie_info_df['releasedEvent'][0],
-                                url=movie_info_df['url'][0],
-                                image=movie_info_df['image'][0]
-                            )
-                            db.session.add(new_movie)
-                            db.session.commit()
-                except Exception as e:
-                    print(f"Failed to fetch movie info for {url}: {e}")
-
-        db.session.commit()
-
-        # Return the user data along with a success message
         user_data_json = user_data_df.to_dict(orient='records')
         return jsonify({
             'message': 'Username processed; diary entries updated!',
             'user_data': user_data_json
         }), 200
 
-    # Add new user and save diary entries to the database
-    new_user = User(username=username)
-    db.session.add(new_user)
-    db.session.commit()
+    else:
+        new_user = User(username=username)
+        db.session.add(new_user)
+        db.session.commit()
 
-    # Fetch user data and create a DataFrame
-    user_data_df = get_user_data(username)
+        user_data_df = get_user_data(username)
+        update_diary_entries(new_user.id, user_data_df)
 
+        user_data_json = user_data_df.to_dict(orient='records')
+        return jsonify({
+            'message': 'User added successfully!',
+            'user_data': user_data_json
+        }), 201
+
+
+def update_diary_entries(user_id, user_data_df):
     for index, row in user_data_df.iterrows():
-        # Check for existing diary entry with the same user_id and other key attributes
         existing_entry = UserDiary.query.filter_by(
-            user_id=existing_user.id,
+            user_id=user_id,
             day=row['day'],
             month=row['month'],
             year=row['year'],
@@ -148,9 +105,8 @@ def add_user():
         ).first()
 
         if existing_entry is None:
-            # If no existing entry is found, add it
             diary_entry = UserDiary(
-                user_id=existing_user.id,
+                user_id=user_id,
                 day=row['day'],
                 month=row['month'],
                 year=row['year'],
@@ -162,15 +118,14 @@ def add_user():
             )
             db.session.add(diary_entry)
 
-        # Fetch movie info if film_link exists
         if row['film_link']:
             try:
                 url = f"https://www.letterboxd.com/{'/'.join(row['film_link'].split('/')[2:])}"
                 movie_info_df = get_a_movie_info(url, row['film'])
+
                 if movie_info_df is not None:
-                    # Create a new Movie object and add to the database
                     existing_movie = Movie.query.filter_by(url=movie_info_df['url'][0]).first()
-                    if not existing_movie:  
+                    if not existing_movie:
                         new_movie = Movie(
                             name=movie_info_df['name'][0],
                             director=movie_info_df['director'][0],
@@ -184,15 +139,8 @@ def add_user():
             except Exception as e:
                 print(f"Failed to fetch movie info for {url}: {e}")
 
-    # Commit the new diary entries to the database
     db.session.commit()
 
-    # Return the user data along with a success message
-    user_data_json = user_data_df.to_dict(orient='records')
-    return jsonify({
-        'message': 'User added successfully!',
-        'user_data': user_data_json
-    }), 201
 
 
 @app.route('/api/user_diary/<username>/', methods=['GET'])
