@@ -3,7 +3,7 @@ import ast
 
 import pandas as pd
 from utils.table_definitions import db, UserDiary, Movie, User
-from utils.config import STAR_MAPPING
+from config import STAR_MAPPING
 import os
 
 from bs4 import BeautifulSoup
@@ -47,6 +47,14 @@ def get_topster_helper(username):
 
     top_unique_films = diary_data.sort_values(by='numeric_rating', ascending=False).drop_duplicates('film').nlargest(25, 'numeric_rating')
 
+    # This is randomization
+    # Group by 'numeric_rating', shuffle within each group, and concatenate
+    top_unique_films_randomized = top_unique_films.groupby('numeric_rating').apply(lambda x: x.sample(frac=1)).reset_index(drop=True)
+
+    # Sort the final result by 'numeric_rating' in descending order
+    top_unique_films_randomized = top_unique_films_randomized.sort_values(by='numeric_rating', ascending=False)
+
+    top_unique_films = top_unique_films_randomized
     # Query all movies from the Movie table
     movies = Movie.query.all()
     if not movies:

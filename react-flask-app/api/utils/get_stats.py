@@ -1,7 +1,7 @@
 import pandas as pd
 import ast
 from utils.table_definitions import db, UserDiary, Movie, User
-from utils.config import STAR_MAPPING
+from config import STAR_MAPPING
 
 def get_combined_user_diary_and_movies(username):
     user = User.query.filter_by(username=username).first()

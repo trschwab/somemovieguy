@@ -2,7 +2,7 @@
 from utils.table_definitions import UserDiary, Movie
 from utils.movie_extractions import get_a_movie_info
 from sqlalchemy import and_
-import config
+from config import LETTERBOXD_BASE_URL
 from utils.table_definitions import Movie, UserDiary, db
 
 
@@ -32,7 +32,7 @@ def update_diary_entries(user_id, user_data_df):
 
         if row['film_link']:
             try:
-                url = f"{config.LETTERBOXD_BASE_URL}{'/'.join(row['film_link'].split('/')[2:])}"
+                url = f"{LETTERBOXD_BASE_URL}{'/'.join(row['film_link'].split('/')[2:])}"
                 movie_info_df = get_a_movie_info(url, row['film'])
 
                 if movie_info_df is not None:

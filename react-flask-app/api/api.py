@@ -6,7 +6,7 @@ from flask import Flask, Response, jsonify, request, url_for
 from flask_cors import CORS
 from sqlalchemy import and_
 from utils.api_utils import update_diary_entries
-from utils.config import *
+from config import *
 from utils.get_stats import (get_combined_user_diary_and_movies,
                              get_top_rated_movies, get_user_stats_str)
 from utils.get_topster import get_topster_helper
