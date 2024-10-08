@@ -10,7 +10,6 @@ const AboutPage = () => {
     <div style={styles.container}>
         <BasicExample />
 
-      {/* Main Content */}
       <div style={styles.contentContainer}>
         <div style={styles.contentBox}>
           <p style={styles.paragraph}>

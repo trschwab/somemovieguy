@@ -1,0 +1,67 @@
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* Change to 5 columns */
+    gap: 0;
+    width: 30%; /* You can adjust this if you want the grid to be larger or smaller */
+    margin: 0 auto;
+  }
+  
+  .grid-item {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 2/3; /* Keep the taller aspect ratio */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Ensure the full image is visible */
+  }
+  
+  select {
+    position: absolute; /* Superimpose dropdown over the image */
+    top: 10px; /* Adjust position as needed */
+    left: 10px;
+    background: rgba(255, 255, 255, 0.7); /* Semi-transparent background */
+    border: none;
+    padding: 5px;
+    z-index: 1; /* Ensure the dropdown is on top of the image */
+  }
+  
+  .search-box {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensure padding is accounted for in width */
+  }
+  
+  .dropdown {
+    position: absolute; /* Change to absolute */
+    background-color: white;
+    border: 1px solid #ccc;
+    width: auto; /* Set width to auto */
+    min-width: 200px; /* Minimum width */
+    max-width: 300px; /* Maximum width */
+    left: 0; /* Align to the left */
+    max-height: 200px; /* Max height for scrolling */
+    overflow-y: auto; /* Scroll if necessary */
+    z-index: 1;
+    box-sizing: border-box; /* Ensure padding is included in width */
+    white-space: normal; /* Allow text to wrap */
+  }
+  
+  .dropdown-item {
+    padding: 10px;
+    cursor: pointer;
+    word-wrap: break-word; /* Ensure long titles wrap to the next line */
+    white-space: normal; /* Prevent text from being cut off */
+  }
+  
+  .dropdown-item:hover {
+    background-color: #f0f0f0;
+  }
+  
