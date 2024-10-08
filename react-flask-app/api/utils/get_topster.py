@@ -3,7 +3,6 @@ import ast
 
 import pandas as pd
 from utils.table_definitions import db, UserDiary, Movie, User
-from config import STAR_MAPPING
 import os
 
 from bs4 import BeautifulSoup
@@ -18,6 +17,12 @@ from io import BytesIO
 from PIL import Image
 from flask import Response
 import io
+
+STAR_MAPPING = {
+    '×': 0, '× ½': 1, '× ★': 2, '× ★½': 3, '× ★★': 4,
+    '× ★★½': 5, '× ★★★': 6, '× ★★★½': 7, '× ★★★★': 8,
+    '× ★★★★½': 9, '× ★★★★★': 10
+}
 
 
 def get_topster_helper(username):

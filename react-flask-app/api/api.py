@@ -6,7 +6,6 @@ from flask import Flask, Response, jsonify, request, url_for
 from flask_cors import CORS
 from sqlalchemy import and_
 from utils.api_utils import update_diary_entries
-from config import *
 from utils.get_stats import (get_combined_user_diary_and_movies,
                              get_top_rated_movies, get_user_stats_str)
 from utils.get_topster import get_topster_helper
@@ -15,9 +14,8 @@ from utils.movie_extractions import get_a_movie_info
 from utils.table_definitions import Movie, User, UserDiary, db, migrate
 
 app = Flask(__name__, static_folder="../build", static_url_path='/')
-
-# Load configurations from config file
-app.config.from_object('config')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 CORS(app)
 
