@@ -109,30 +109,48 @@ def get_user_stats_str(username):
 
     return_string = ""
 
-    # movies watched in 2024
-    yr_count = len(diary_data[diary_data["year"] == "2024"])
+    try:
+        # movies watched in 2024
+        yr_count = len(diary_data[diary_data["year"] == "2024"])
+        return_string += f"{username} watched {yr_count} movies in 2024\n"
+    except Exception as e:
+        print(e)
+
+    try:
+        # Get average of a user
+        avg = get_average(diary_data)
+        return_string += f"{username} on average rated movies {avg}\n"
+    except Exception as e:
+        print(e)
     
-    return_string += f"{username} watched {yr_count} movies in 2024\n"
-
-    # Get average of a user
-    avg = get_average(diary_data)
-    return_string += f"{username} on average rated movies {avg}\n"
-
-    # Get deviation of a user
-    dev = get_std_dev(diary_data)
-    return_string += f"{username} had a std deviation in their rating of {dev}\n"
-
-    # Get top director
-    dir = get_top_director(combined_df)
-    return_string += f"{username} has a top director of \n{dir}\n"
-
-    # Get reviews
-    review_count = get_reviews_per_year(diary_data, "2024")
-    return_string += f"{username} left {review_count} reviews in 2024\n"
-
-    # Get hot takes
-    hot_takes_str = get_rating_deviations(combined_df)
-    return_string += f"{username} deviated from mainstream ratings by >3 stars for these movies:\n{hot_takes_str}\n"
+    try:
+        # Get deviation of a user
+        dev = get_std_dev(diary_data)
+        return_string += f"{username} had a std deviation in their rating of {dev}\n"
+    except Exception as e:
+        print(e)
+    
+    try:
+        # Get top director
+        dir = get_top_director(combined_df)
+        return_string += f"{username} has a top director of \n{dir}\n"
+    except Exception as e:
+        print(e)
+    
+    try:
+        # Get reviews
+        review_count = get_reviews_per_year(diary_data, "2024")
+        return_string += f"{username} left {review_count} reviews in 2024\n"
+    except Exception as e:
+        print(e)
+    
+    try:
+        # Get hot takes
+        hot_takes_str = get_rating_deviations(combined_df)
+        return_string += f"{username} deviated from mainstream ratings by >3 stars for these movies:\n{hot_takes_str}\n"
+    except Exception as e:
+        print(e)
+    
 
     print(return_string)
 

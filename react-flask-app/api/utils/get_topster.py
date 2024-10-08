@@ -18,6 +18,7 @@ from PIL import Image
 from flask import Response
 import io
 
+
 def get_topster_helper(username):
     # Get user by username
     user = User.query.filter_by(username=username).first()
@@ -87,21 +88,22 @@ def get_topster_helper(username):
     # Download the images from the URLs and save them individually
     images = []
     for i, url in enumerate(image_paths):
-        response = requests.get(url)
-        if response.status_code == 200:
-            img = Image.open(BytesIO(response.content))
-            images.append(img)
-            
-            # # Save the individual image
-            # img_path = f'downloaded_images/image_{i + 1}.png'
-            # img.save(img_path)
-            # print(f"Image saved to {img_path}")
-        else:
-            print(f"Failed to fetch image from {url}")
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                img = Image.open(BytesIO(response.content))
+                images.append(img)
+            else:
+                raise Exception(f"Failed to fetch image from {url}")
+        except Exception as e:
+            print(f"Error: {e}")
+            # Add a blank white image if any error occurs
+            blank_img = Image.new('RGB', (500, 500), color='white')
+            images.append(blank_img)
 
-    # Ensure we have all 25 images
-    if len(images) < 25:
-        raise ValueError("Not all images could be downloaded successfully")
+    # # Ensure we have all 25 images
+    # if len(images) < 25:
+    #     raise ValueError("Not all images could be downloaded successfully")
 
     # Determine the size of individual images
     img_width, img_height = images[0].size
@@ -118,7 +120,6 @@ def get_topster_helper(username):
         x_offset = (i % 5) * img_width
         y_offset = (i // 5) * img_height
         grid_image.paste(image, (x_offset, y_offset))
-
 
     # Create a BytesIO object to hold the image data
     img_byte_array = io.BytesIO()
