@@ -1,26 +1,29 @@
+# app.py
 import time
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from utils.get_stats import get_top_rated_movies, get_combined_user_diary_and_movies, get_user_stats_str
-from utils.table_definitions import db, migrate, UserDiary, User, Movie
-from utils.lbox_extraction import is_valid_username, get_user_data
-from utils.get_topster import get_topster_helper
-from utils.movie_extractions import get_a_movie_info
-from sqlalchemy import and_
-from flask import url_for
-from flask import Response
 
 import pandas as pd
+from flask import Flask, Response, jsonify, request, url_for
+from flask_cors import CORS
+from sqlalchemy import and_
+from utils.api_utils import update_diary_entries
+from utils.config import *
+from utils.get_stats import (get_combined_user_diary_and_movies,
+                             get_top_rated_movies, get_user_stats_str)
+from utils.get_topster import get_topster_helper
+from utils.lbox_extraction import get_user_data, is_valid_username
+from utils.movie_extractions import get_a_movie_info
+from utils.table_definitions import Movie, User, UserDiary, db, migrate
 
 app = Flask(__name__, static_folder="../build", static_url_path='/')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Load configurations from config file
+app.config.from_object('config')
+
 CORS(app)
 
 # Initialize SQLAlchemy and Alembic Migrations
 db.init_app(app)
 migrate.init_app(app, db)
-
 
 def remove_duplicates():
     users = User.query.all()
@@ -44,7 +47,6 @@ def remove_duplicates():
 
     db.session.commit()
 
-# Run the cleanup function during server initialization or periodically
 with app.app_context():
     remove_duplicates()
 
@@ -72,13 +74,10 @@ def add_user():
     if existing_user:
         user_data_df = get_user_data(username)
         update_diary_entries(existing_user.id, user_data_df)
-
-        user_data_json = user_data_df.to_dict(orient='records')
         return jsonify({
             'message': 'Username processed; diary entries updated!',
-            'user_data': user_data_json
+            'user_data': user_data_df.to_dict(orient='records')
         }), 200
-
     else:
         new_user = User(username=username)
         db.session.add(new_user)
@@ -87,61 +86,10 @@ def add_user():
         user_data_df = get_user_data(username)
         update_diary_entries(new_user.id, user_data_df)
 
-        user_data_json = user_data_df.to_dict(orient='records')
         return jsonify({
             'message': 'User added successfully!',
-            'user_data': user_data_json
+            'user_data': user_data_df.to_dict(orient='records')
         }), 201
-
-
-def update_diary_entries(user_id, user_data_df):
-    for index, row in user_data_df.iterrows():
-        existing_entry = UserDiary.query.filter_by(
-            user_id=user_id,
-            day=row['day'],
-            month=row['month'],
-            year=row['year'],
-            film=row['film']
-        ).first()
-
-        if existing_entry is None:
-            diary_entry = UserDiary(
-                user_id=user_id,
-                day=row['day'],
-                month=row['month'],
-                year=row['year'],
-                film=row['film'],
-                released=row.get('released', None),
-                rating=row.get('rating', None),
-                review_link=row.get('review_link', None),
-                film_link=row.get('film_link', None)
-            )
-            db.session.add(diary_entry)
-
-        if row['film_link']:
-            try:
-                url = f"https://www.letterboxd.com/{'/'.join(row['film_link'].split('/')[2:])}"
-                movie_info_df = get_a_movie_info(url, row['film'])
-
-                if movie_info_df is not None:
-                    existing_movie = Movie.query.filter_by(url=movie_info_df['url'][0]).first()
-                    if not existing_movie:
-                        new_movie = Movie(
-                            name=movie_info_df['name'][0],
-                            director=movie_info_df['director'][0],
-                            rating_value=movie_info_df['ratingValue'][0],
-                            released_event=movie_info_df['releasedEvent'][0],
-                            url=movie_info_df['url'][0],
-                            image=movie_info_df['image'][0]
-                        )
-                        db.session.add(new_movie)
-                        db.session.commit()
-            except Exception as e:
-                print(f"Failed to fetch movie info for {url}: {e}")
-
-    db.session.commit()
-
-
 
 @app.route('/api/user_diary/<username>/', methods=['GET'])
 def get_user_diary(username):
@@ -167,20 +115,12 @@ def get_user_diary(username):
     } for entry in diary_entries])
 
     top_movies = get_top_rated_movies(diary_data)
-    top_movies_data = top_movies.to_dict(orient='records')
-
     return jsonify({
         'username': username,
         'diary_entries': diary_data.to_dict(orient='records'),
-        'top_movies': top_movies_data
+        'top_movies': top_movies.to_dict(orient='records')
     }), 200
 
-@app.route('/api/users/', methods=['GET'])
-def get_users():
-    users = User.query.all()
-    return jsonify([{'id': user.id, 'username': user.username} for user in users])
-
-# New route to fetch movies from the Movie table
 @app.route('/api/movies/', methods=['GET'])
 def get_movies():
     movies = Movie.query.all()
@@ -188,7 +128,6 @@ def get_movies():
     if not movies:
         return jsonify({'message': 'No movies found!'}), 404
 
-    # Convert movie data into JSON format
     movie_data = [{
         'name': movie.name,
         'director': movie.director,
@@ -200,17 +139,6 @@ def get_movies():
 
     return jsonify({'movies': movie_data}), 200
 
-@app.route('/api/user_diary_combined/<username>/', methods=['GET'])
-def get_combined_user_diary(username):
-    combined_df = get_combined_user_diary_and_movies(username)
-    
-    if combined_df is None:
-        return jsonify({'message': "error"}), 404
-
-    combined_data = combined_df.to_dict(orient='records')
-    return jsonify({'combined_data': combined_data}), 200
-
-
 @app.route('/api/user_stats_string/<username>/', methods=['GET'])
 def get_stats_str(username):
     return_string = get_user_stats_str(username)
@@ -218,11 +146,7 @@ def get_stats_str(username):
     if return_string is None:
         return jsonify({'message': "No string returned"}), 404
 
-    # Replace newlines with <br />
-    return_string = return_string.replace('\n', '<br />')
-
-    return jsonify({'return_string': return_string}), 200
-
+    return jsonify({'return_string': return_string.replace('\n', '<br />')}), 200
 
 @app.route('/api/get_topster/<username>/', methods=['GET'])
 def get_topster(username):
@@ -231,9 +155,7 @@ def get_topster(username):
     if img_data is None:
         return jsonify({'message': "No image generated"}), 404
 
-    # Return the image binary data as a response
     return Response(img_data, mimetype='image/png')
-
 
 if __name__ == '__main__':
     with app.app_context():

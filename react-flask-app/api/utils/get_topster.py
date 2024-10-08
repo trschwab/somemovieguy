@@ -3,6 +3,7 @@ import ast
 
 import pandas as pd
 from utils.table_definitions import db, UserDiary, Movie, User
+from utils.config import STAR_MAPPING
 import os
 
 from bs4 import BeautifulSoup
@@ -42,22 +43,7 @@ def get_topster_helper(username):
         'film_link': entry.film_link
     } for entry in diary_entries])
 
-    # Get stats string
-    mapping = {
-        '×': 0,
-        '× ½': 1,
-        '× ★': 2,
-        '× ★½': 3,
-        '× ★★': 4,
-        "× ★★½": 5,
-        "× ★★★": 6,
-        "× ★★★½": 7,
-        "× ★★★★": 8,
-        "× ★★★★½": 9,
-        '× ★★★★★': 10
-    }
-
-    diary_data['numeric_rating'] = diary_data.rating.map(mapping)
+    diary_data['numeric_rating'] = diary_data.rating.map(STAR_MAPPING)
 
     top_unique_films = diary_data.sort_values(by='numeric_rating', ascending=False).drop_duplicates('film').nlargest(25, 'numeric_rating')
 
