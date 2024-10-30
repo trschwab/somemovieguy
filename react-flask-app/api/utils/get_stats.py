@@ -120,7 +120,7 @@ def get_user_stats_str(username):
 
     try:
         hot_takes_str = get_rating_deviations(combined_df)
-        return_string += f"Hot Takes (ratings >3 stars from average): {hot_takes_str}"
+        return_string += f"Hot Takes (ratings >3 stars from average): \n{hot_takes_str}"
     except Exception as e:
         print(e)
 

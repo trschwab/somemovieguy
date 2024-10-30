@@ -60,7 +60,7 @@
   
   .stats-container,
   .topster-container {
-    max-width: 80%;
+    max-width: 100%;
     margin-top: 2rem;
     text-align: center;
   }
@@ -76,8 +76,8 @@
   }
   
   .topster-image {
-    max-height: 60vh;
-    width: auto;
+    max-height: 90vh;
+    width: 100%;
     display: block;
     margin: 1rem auto;
     border-radius: 10px;
