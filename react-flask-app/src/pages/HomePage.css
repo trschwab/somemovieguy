@@ -4,7 +4,7 @@
     flex-direction: column;
     align-items: center;
     padding: 2rem;
-    background-color: #f7f9fc;
+    /* background-color: #f7f9fc; */
     font-family: Arial, sans-serif;
     color: #333;
   }
@@ -46,10 +46,16 @@
     background-color: #0056b3;
   }
   
-  .validation-message {
+  .validation-message-red {
     font-size: 1.1rem;
     margin: 1rem 0;
     color: #ff6f61;
+  }
+
+  .validation-message-green {
+    font-size: 1.1rem;
+    margin: 1rem 0;
+    color: #61ff6f;
   }
   
   .stats-container,

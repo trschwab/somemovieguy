@@ -8,13 +8,13 @@ function BasicExample() {
   return (
     <Navbar expand="lg" className="bg-body-tertiary">
       <Container>
-        <Navbar.Brand href="/">SomeMovieGuy</Navbar.Brand>
+        <Navbar.Brand href="/test/">SomeMovieGuy</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
           <Nav>
-            <Nav.Link href="/stats">User Statistics & Topster</Nav.Link>
-            <Nav.Link href="/topster">Custom Topster Generation</Nav.Link>
-            <Nav.Link href="/about">About</Nav.Link>
+            <Nav.Link href="/test/stats">User Statistics & Topster</Nav.Link>
+            <Nav.Link href="/test/topster">Custom Topster Generation</Nav.Link>
+            <Nav.Link href="/test/about">About</Nav.Link>
             {/* <NavDropdown title="Dropdown" id="basic-nav-dropdown">
               <NavDropdown.Item href="#action/3.1">Action</NavDropdown.Item>
               <NavDropdown.Item href="#action/3.2">Another action</NavDropdown.Item>

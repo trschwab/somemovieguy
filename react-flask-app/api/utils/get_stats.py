@@ -85,45 +85,47 @@ def get_user_stats_str(username):
     combined_df = pd.merge(diary_data, movie_data, left_on='film', right_on='name', how='left')
     combined_df.fillna('', inplace=True)
 
-    return_string = ""
+    # Create a formatted string with readable sections and indented information
+    return_string = f"Stats for {username}:\n"
 
     try:
         yr_count = len(diary_data[diary_data["year"] == "2024"])
-        return_string += f"{username} watched {yr_count} movies in 2024\n"
+        return_string += f"• Movies watched in 2024: {yr_count}\n"
     except Exception as e:
         print(e)
 
     try:
         avg = get_average(diary_data)
-        return_string += f"{username} on average rated movies {avg}\n"
+        return_string += f"• Average movie rating: {avg:.2f}\n"
     except Exception as e:
         print(e)
 
     try:
         dev = get_std_dev(diary_data)
-        return_string += f"{username} had a std deviation in their rating of {dev}\n"
+        return_string += f"• Rating standard deviation: {dev:.2f}\n"
     except Exception as e:
         print(e)
 
     try:
-        dir = get_top_director(combined_df)
-        return_string += f"{username}'s top director:\n{dir}\n"
+        top_directors = get_top_director(combined_df)
+        return_string += "Top Directors:" + top_directors
     except Exception as e:
         print(e)
 
     try:
         review_count = get_reviews_per_year(diary_data, "2024")
-        return_string += f"{username} left {review_count} reviews in 2024\n"
+        return_string += f"\n• Reviews left in 2024: {review_count}\n"
     except Exception as e:
         print(e)
 
     try:
         hot_takes_str = get_rating_deviations(combined_df)
-        return_string += f"{username}'s hot takes (deviation >3 stars):\n{hot_takes_str}\n"
+        return_string += f"Hot Takes (ratings >3 stars from average): {hot_takes_str}"
     except Exception as e:
         print(e)
 
     return return_string
+
 
 
 def get_reviews_per_year(df, year="2024"):
@@ -169,7 +171,7 @@ def get_rating_deviations(df):
     
     result_string = ""
     for _, row in deviated_df.iterrows():
-        result_string += f"{row['film']}:\n    Rating: {row['numeric_rating']}\n    Average Rating: {row['rating_value'] * 2}\n"
+        result_string += f"{row['film']}:\n    Your Rating: {row['numeric_rating']}\n    Average Rating: {row['rating_value'] * 2}\n"
 
     return result_string
 
