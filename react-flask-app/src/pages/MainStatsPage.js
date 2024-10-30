@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './HomePage.css'; // Importing the CSS file
+import './HomePage.css';
 import './styles_v2.css';
 import styles from './styles';
 
 const StatsPage = () => {
   const [username, setUsername] = useState('');
   const [validationMessage, setValidationMessage] = useState('');
-  const [messageClass, setMessageClass] = useState(''); // State for message styling
+  const [messageClass, setMessageClass] = useState('');
   const [userData, setUserData] = useState([]);
   const [statsString, setStatsString] = useState('');
   const [topsterImageUrl, setTopsterImageUrl] = useState('');
@@ -24,7 +24,7 @@ const StatsPage = () => {
     setStatsString('');
     setTopsterImageUrl('');
     setValidationMessage('This might take a few minutes...');
-    setMessageClass(''); // Reset message styling
+    setMessageClass('');
     setLoadingStatsMessage('');
     setLoadingTopsterMessage('');
     setIsLoading(true);
@@ -45,7 +45,7 @@ const StatsPage = () => {
       const userData = await userResponse.json();
       setUserData(userData.user_data);
       setValidationMessage(userData.message);
-      setMessageClass('validation-message-green'); // Success styling
+      setMessageClass('validation-message-green');
 
       // Load stats
       setLoadingStatsMessage('Loading stats...');
@@ -74,7 +74,7 @@ const StatsPage = () => {
       setUsername('');
     } catch (error) {
       setValidationMessage(error.message);
-      setMessageClass('validation-message-red'); // Error styling
+      setMessageClass('validation-message-red');
       console.error('Error:', error);
     } finally {
       setIsLoading(false);
