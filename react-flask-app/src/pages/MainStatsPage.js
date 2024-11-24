@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
 import './styles_v2.css';
 import styles from './styles';
+import StatsComponent from "../components/StatsComponent";
+
 
 const StatsPage = () => {
   const [username, setUsername] = useState('');
@@ -83,6 +85,7 @@ const StatsPage = () => {
 
   return (
     <div className="home-page">
+      <p>test</p>
       <form onSubmit={handleSubmit} className="username-form">
         <input
           type="text"
@@ -99,10 +102,20 @@ const StatsPage = () => {
       {loadingStatsMessage && <p className="loading-message">{loadingStatsMessage}</p>}
       {loadingTopsterMessage && <p className="loading-message">{loadingTopsterMessage}</p>}
 
+      {/* {statsString && (
+        <div className="stats-container">
+          <h3>Stats String:</h3>
+          
+          <div className="stats-content" dangerouslySetInnerHTML={{ __html: statsString }} />
+        </div>
+      )}
+
+      <StatsComponent username={username} /> */}
+
       {statsString && (
         <div className="stats-container">
           <h3>Stats String:</h3>
-          <div className="stats-content" dangerouslySetInnerHTML={{ __html: statsString }} />
+          <StatsComponent stats={statsString} />
         </div>
       )}
 

@@ -3,6 +3,7 @@ import time
 
 import pandas as pd
 from flask import Flask, Response, jsonify, request, url_for
+import json
 from flask_cors import CORS
 from sqlalchemy import and_
 from utils.api_utils import update_diary_entries
@@ -139,12 +140,15 @@ def get_movies():
 
 @app.route('/api/user_stats_string/<username>/', methods=['GET'])
 def get_stats_str(username):
-    return_string = get_user_stats_str(username)
+    return_string = json.loads(get_user_stats_str(username))
     
     if return_string is None:
         return jsonify({'message': "No string returned"}), 404
 
-    return jsonify({'return_string': return_string.replace('\n', '<br />')}), 200
+    print(type(return_string))
+    print(return_string)
+    return jsonify({'return_string': return_string}), 200
+    # return jsonify({'return_string': return_string.replace('\n', '<br />')}), 200
 
 @app.route('/api/get_topster/<username>/', methods=['GET'])
 def get_topster(username):

@@ -1,6 +1,7 @@
 import pandas as pd
 import ast
 from utils.table_definitions import db, UserDiary, Movie, User
+import json
 
 STAR_MAPPING = {
     '×': 0, '× ½': 1, '× ★': 2, '× ★½': 3, '× ★★': 4,
@@ -85,46 +86,48 @@ def get_user_stats_str(username):
     combined_df = pd.merge(diary_data, movie_data, left_on='film', right_on='name', how='left')
     combined_df.fillna('', inplace=True)
 
-    # Create a formatted string with readable sections and indented information
-    return_string = f"Stats for {username}:\n"
+    # Create a json string
+    stats_data = {"username": {"data": username, "description": "Data for user"}}
 
     try:
         yr_count = len(diary_data[diary_data["year"] == "2024"])
-        return_string += f"• Movies watched in 2024: {yr_count}\n"
+        stats_data["2024_watch"] = {"data": yr_count, "description": "Movies watched in 2024"}
     except Exception as e:
         print(e)
 
     try:
         avg = get_average(diary_data)
-        return_string += f"• Average movie rating: {avg:.2f}\n"
+        stats_data["avg_rating"] = {"data": f"{avg:.2f}", "description": "Average movie rating"}
     except Exception as e:
         print(e)
 
     try:
         dev = get_std_dev(diary_data)
-        return_string += f"• Rating standard deviation: {dev:.2f}\n"
+        stats_data["std_dev"] = {"data": f"{dev:.2f}", "description": "Rating standard deviation"}
     except Exception as e:
         print(e)
 
     try:
         top_directors = get_top_director(combined_df)
-        return_string += "Top Directors:" + top_directors
+        stats_data["top_directors"] = {"data": top_directors, "description": "Top Directors"}
     except Exception as e:
         print(e)
 
     try:
         review_count = get_reviews_per_year(diary_data, "2024")
-        return_string += f"\n• Reviews left in 2024: {review_count}\n"
+        stats_data["review_count"] = {"data": review_count, "description": "Reviews left in 2024"}
     except Exception as e:
         print(e)
 
     try:
         hot_takes_str = get_rating_deviations(combined_df)
-        return_string += f"Hot Takes (ratings >3 stars from average): \n{hot_takes_str}"
+        stats_data["hot_takes"] = {"data": hot_takes_str, "description": "Hot Takes (ratings >3 stars from average)"}
     except Exception as e:
         print(e)
 
-    return return_string
+    json_string = json.dumps(stats_data)
+
+    return json_string
 
 
 
