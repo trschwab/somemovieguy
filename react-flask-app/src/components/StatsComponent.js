@@ -15,23 +15,38 @@ const StatsDisplay = ({ stats }) => {
 
   return (
     <div>
-      <h3>User Stats</h3>
       <p>
-      {
+        Username: {convertStats["username"]["data"] ? convertStats["username"]["data"] : "Username not available"}
+        <br />
+        Movies watched in 2024: {convertStats["2024_watch"]["data"] ? convertStats["2024_watch"]["data"] : "Watch count not available"}
+        <br />
+        Average Movie Rating: {convertStats["avg_rating"]["data"] ? convertStats["avg_rating"]["data"] : "Average Rating not available"}        
+        <br />
+        Standard Deviation: {convertStats["std_dev"]["data"] ? convertStats["std_dev"]["data"] : "Standard Deviation not available"}        
+        <br />
+        Top Directors: {convertStats["top_directors"]["data"] ? convertStats["top_directors"]["data"] : "Top Directors not available"}        
+        <br />
+        Review Count: {convertStats["review_count"]["data"] ? convertStats["review_count"]["data"] : "Review Count not available"}        
+        <br />
+        Hot Takes: {convertStats["hot_takes"]["data"] ? convertStats["hot_takes"]["data"] : "Hot Takes not available"}        
+
+
+
+      {/* {
   Object.entries(convertStats).map(([key, value], index) => (
     <div key={index}>
-      <p>{key}</p>
       {typeof value === 'object' ? (
         <>
-          <p>Data: {value.data}</p>
-          <p>Description: {value.description}</p>
+          <p>{value.description}: </p>
+          <p>{value.data}</p>
+          
         </>
       ) : (
         <p>{value}</p>
       )}
     </div>
   ))
-}
+} */}
 
 
 
