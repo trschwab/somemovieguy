@@ -85,12 +85,13 @@ const StatsPage = () => {
 
   return (
     <div className="home-page">
+      Enter your Letterboxd username
       <form onSubmit={handleSubmit} className="username-form">
         <input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase())}
-          placeholder="Enter your username"
+          placeholder="Username"
           required
           disabled={isLoading}
           className="username-input"
@@ -98,7 +99,6 @@ const StatsPage = () => {
         {!isLoading && <button type="submit" className="submit-button">Submit</button>}
       </form>
       {validationMessage && <p className={`validation-message ${messageClass}`}>{validationMessage}</p>}
-      {loadingStatsMessage && <p className="loading-message">{loadingStatsMessage}</p>}
       {loadingTopsterMessage && <p className="loading-message">{loadingTopsterMessage}</p>}
 
       {/* {statsString && (
@@ -111,13 +111,6 @@ const StatsPage = () => {
 
       <StatsComponent username={username} /> */}
 
-      {statsString && (
-        <div className="stats-container">
-          <h3>Stats String:</h3>
-          <StatsComponent stats={statsString} />
-        </div>
-      )}
-
       {topsterImageUrl && (
         <div className="topster-container">
           <h3>User Topster:</h3>
@@ -128,6 +121,16 @@ const StatsPage = () => {
           />
         </div>
       )}
+
+{/* 
+      {loadingStatsMessage && <p className="loading-message">{loadingStatsMessage}</p>}
+      {statsString && (
+        <div className="stats-container">
+          <h3>Stats String:</h3>
+          <StatsComponent stats={statsString} />
+        </div>
+      )} */}
+
     </div>
   );
 };
