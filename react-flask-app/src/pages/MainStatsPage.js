@@ -85,7 +85,6 @@ const StatsPage = () => {
 
   return (
     <div className="home-page">
-      <p>test</p>
       <form onSubmit={handleSubmit} className="username-form">
         <input
           type="text"
