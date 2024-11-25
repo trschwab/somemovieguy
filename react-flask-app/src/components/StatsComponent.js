@@ -16,26 +16,36 @@ const StatsDisplay = ({ stats }) => {
   return (
     <div style={{ textAlign: "left" }}>
       <p>
-        Username: {convertStats["username"]["data"] ? convertStats["username"]["data"] : "Username not available"}
-        <br />
-        Movies watched in 2024: {convertStats["2024_watch"]["data"] ? convertStats["2024_watch"]["data"] : "Watch count not available"}
-        <br />
-        Average Movie Rating: {convertStats["avg_rating"]["data"] ? convertStats["avg_rating"]["data"] : "Average Rating not available"}        
-        <br />
-        Standard Deviation: {convertStats["std_dev"]["data"] ? convertStats["std_dev"]["data"] : "Standard Deviation not available"}        
-        <br />
-        Top Directors: {convertStats["top_directors"]["data"] ? convertStats["top_directors"]["data"] : "Top Directors not available"}        
-        <br />
-        Review Count: {convertStats["review_count"]["data"] ? convertStats["review_count"]["data"] : "Review Count not available"}        
+        <p style={{ fontWeight: "bold" }}>Username:</p> {convertStats["username"]["data"] ? convertStats["username"]["data"] : "Username not available"}
         <br /><br />
-        "Hot Take" movies (your rating is more than 3 stars different than the average rating):
+        <p style={{ fontWeight: "bold" }}>Movies watched in 2024:</p> {convertStats["2024_watch"]["data"] ? convertStats["2024_watch"]["data"] : "Watch count not available"}
         <br /><br />
+        <p style={{ fontWeight: "bold" }}>Review Count:</p> {convertStats["review_count"]["data"] ? convertStats["review_count"]["data"] : "Review Count not available"}        
+        <br /><br />
+        <p style={{ fontWeight: "bold" }}>Average Movie Rating:</p> {convertStats["avg_rating"]["data"] ? convertStats["avg_rating"]["data"] : "Average Rating not available"}        
+        <br /><br />
+        <p style={{ fontWeight: "bold" }}>Standard Deviation:</p> {convertStats["std_dev"]["data"] ? convertStats["std_dev"]["data"] : "Standard Deviation not available"}        
+        <br /><br /> 
+        <p style={{ fontWeight: "bold" }}>Top Directors:</p>
+        {convertStats["top_directors"]["data"] && convertStats["top_directors"]["data"].length > 0 ? (
+            <div>
+            {convertStats["top_directors"]["data"].map((take, index) => (
+                <div>
+                <p>{take.name} with {take.counts} movies watched</p>
+                </div>
+            ))}
+            </div>
+        ) : (
+            <p>Top Directors not available</p>
+        )}
+        <br /><br />
+        <p style={{ fontWeight: "bold" }}>"Hot Take" movies (your rating is more than 3 stars different than the average rating):</p>
         {/* Hot Takes: {convertStats["hot_takes"]["data"] ? convertStats["hot_takes"]["data"] : "Hot Takes not available"}         */}
         {convertStats["hot_takes"]["data"] && convertStats["hot_takes"]["data"].length > 0 ? (
             <div>
             {convertStats["hot_takes"]["data"].map((take, index) => (
                 <div>
-                <p>Film: {take.film}</p>
+                <p>{take.film}:</p>
                 <ul>
                 <p>User Rating: {take.user_rating}</p>
                 <p>Movie Rating: {take.movie_rating}</p>

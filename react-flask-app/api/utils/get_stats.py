@@ -149,8 +149,9 @@ def get_top_director(combined_df):
     df = pd.DataFrame.from_dict(director_set)
     actor_stats = df.groupby(["name"]).size().reset_index(name='counts')
     top_5 = actor_stats.sort_values("counts", ascending=False).head(5)
+    top_5 = top_5.to_dict(orient="records")
 
-    return top_5.to_string(index=False)
+    return top_5
 
 
 def get_top_rated_movies(df, top_n=20):
