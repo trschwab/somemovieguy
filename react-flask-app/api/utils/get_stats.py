@@ -172,11 +172,14 @@ def get_rating_deviations(df):
     deviation_mask = (df['numeric_rating'] - (df['rating_value'] * 2)).abs() > 3
     deviated_df = df[deviation_mask]
     
-    result_string = ""
+    result_list = []
     for _, row in deviated_df.iterrows():
-        result_string += f"{row['film']}:\n    Your Rating: {row['numeric_rating']}\n    Average Rating: {row['rating_value'] * 2}\n"
+        element = {"film": row['film'],
+         "user_rating": row['numeric_rating'],
+         "movie_rating": row['rating_value'] * 2}
+        result_list += [element]
 
-    return result_string
+    return result_list
 
 
 def get_average(user_data):

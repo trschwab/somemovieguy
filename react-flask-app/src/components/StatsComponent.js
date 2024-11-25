@@ -14,7 +14,7 @@ const StatsDisplay = ({ stats }) => {
 //   const formattedJson = JSON.rawJSON(stats)
 
   return (
-    <div>
+    <div style={{ textAlign: "left" }}>
       <p>
         Username: {convertStats["username"]["data"] ? convertStats["username"]["data"] : "Username not available"}
         <br />
@@ -27,9 +27,25 @@ const StatsDisplay = ({ stats }) => {
         Top Directors: {convertStats["top_directors"]["data"] ? convertStats["top_directors"]["data"] : "Top Directors not available"}        
         <br />
         Review Count: {convertStats["review_count"]["data"] ? convertStats["review_count"]["data"] : "Review Count not available"}        
-        <br />
-        Hot Takes: {convertStats["hot_takes"]["data"] ? convertStats["hot_takes"]["data"] : "Hot Takes not available"}        
-
+        <br /><br />
+        "Hot Take" movies (your rating is more than 3 stars different than the average rating):
+        <br /><br />
+        {/* Hot Takes: {convertStats["hot_takes"]["data"] ? convertStats["hot_takes"]["data"] : "Hot Takes not available"}         */}
+        {convertStats["hot_takes"]["data"] && convertStats["hot_takes"]["data"].length > 0 ? (
+            <div>
+            {convertStats["hot_takes"]["data"].map((take, index) => (
+                <div>
+                <p>Film: {take.film}</p>
+                <ul>
+                <p>User Rating: {take.user_rating}</p>
+                <p>Movie Rating: {take.movie_rating}</p>
+                </ul>
+                </div>
+            ))}
+            </div>
+        ) : (
+            <p>No hot takes available</p>
+        )}
 
 
       {/* {
