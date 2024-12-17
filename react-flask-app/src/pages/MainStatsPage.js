@@ -85,58 +85,60 @@ const StatsPage = () => {
     }
   };
 
-  const handleGetWatchlist = async (e) => {
-    e.preventDefault();
+  // const handleGetWatchlist = async (e) => {
+  //   e.preventDefault();
 
-    if (!watchlistUsername) {
-      setValidationMessage('Please enter a username for the watchlist.');
-      setMessageClass('validation-message-red');
-      return;
-    }
+  //   if (!watchlistUsername) {
+  //     setValidationMessage('Please enter a username for the watchlist.');
+  //     setMessageClass('validation-message-red');
+  //     return;
+  //   }
 
-    try {
-      setIsLoading(true);
-      const watchlistResponse = await fetch(`/api/user_watchlist/${watchlistUsername}/`);
+  //   try {
+  //     setIsLoading(true);
+  //     const watchlistResponse = await fetch(`/api/get_random_watchlist/${watchlistUsername}/`);
 
-      if (!watchlistResponse.ok) {
-        throw new Error('Error fetching watchlist.');
-      }
+  //     if (!watchlistResponse.ok) {
+  //       throw new Error('Error fetching watchlist.');
+  //     }
 
-      const watchlistData = await watchlistResponse.json();
+  //     const watchlistData = await watchlistResponse.json();
 
-      // Check if the watchlist is empty
-      if (watchlistData.length === 0) {
-        setValidationMessage('Watchlist is empty.');
-        setMessageClass('validation-message-red');
-        return;
-      }
+  //     // Check if the watchlist is empty
+  //     if (watchlistData.length === 0) {
+  //       setValidationMessage('Watchlist is empty.');
+  //       setMessageClass('validation-message-red');
+  //       return;
+  //     }
 
-      // Set the user's watchlist
-      setWatchlist(watchlistData);
-      setValidationMessage('');
-      setMessageClass('');
+  //     // Set the user's watchlist
+  //     setWatchlist(watchlistData);
+  //     setValidationMessage('');
+  //     setMessageClass('');
 
-      // Fetch a random movie from the watchlist using the new endpoint
-      const randomMovieResponse = await fetch(`/api/random_watchlist_movie/${watchlistUsername}/`);
+  //     // Fetch a random movie from the watchlist using the new endpoint
+  //     const randomMovieResponse = await fetch(`/api/get_random_watchlist/${watchlistUsername}/`);
 
-      if (!randomMovieResponse.ok) {
-        throw new Error('Error fetching random movie from watchlist.');
-      }
+  //     if (!randomMovieResponse.ok) {
+  //       throw new Error('Error fetching random movie from watchlist.');
+  //     }
 
-      const randomMovieData = await randomMovieResponse.json();
+  //     const randomMovieData = await randomMovieResponse.json();
+  //     console.log(randomMovieData)
+  //     console.log(randomMovieData.title)
 
-      // Display the random movie
-      setValidationMessage(`Random Movie: ${randomMovieData.title}`);
-      setMessageClass('validation-message-green');
-      setRandomMovie(randomMovieData); // Store the random movie in state
-    } catch (error) {
-      console.error('Error fetching watchlist:', error);
-      setValidationMessage('Failed to fetch watchlist.');
-      setMessageClass('validation-message-red');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     // Display the random movie
+  //     setValidationMessage(`Random Movie:`);
+  //     setMessageClass('validation-message-green');
+  //     setRandomMovie(randomMovieData); // Store the random movie in state
+  //   } catch (error) {
+  //     console.error('Error fetching watchlist:', error);
+  //     setValidationMessage('Failed to fetch watchlist.');
+  //     setMessageClass('validation-message-red');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   return (
     <div className="home-page">
@@ -156,7 +158,7 @@ const StatsPage = () => {
       {validationMessage && <p className={`validation-message ${messageClass}`}>{validationMessage}</p>}
       {loadingTopsterMessage && <p className="loading-message">{loadingTopsterMessage}</p>}
 
-      {/* New Input Box for Watchlist Username */}
+      {/* New Input Box for Watchlist Username
       <form onSubmit={handleGetWatchlist} className="username-form">
         <input
           type="text"
@@ -168,7 +170,7 @@ const StatsPage = () => {
           className="username-input"
         />
         {!isLoading && <button type="submit" className="submit-button">Get Watchlist</button>}
-      </form>
+      </form> */}
 
       {/* Displaying the Watchlist */}
       {watchlist.length > 0 && (
@@ -186,15 +188,15 @@ const StatsPage = () => {
         </div>
       )}
 
-      {/* Display the Random Movie */}
+      {/* Display the Random Movie
       {randomMovie && (
         <div className="random-movie-container">
           <h3>Random Movie:</h3>
-          <p>Title: {randomMovie.title}</p>
-          <p>Film URL: <a href={randomMovie.film_url} target="_blank" rel="noopener noreferrer">{randomMovie.film_url}</a></p>
-          <img src={randomMovie.poster_url} alt={randomMovie.title} className="random-movie-poster" />
+          <p>{randomMovie.movie.title}</p>
+          <p><a href={randomMovie.movie.film_url} target="_blank" rel="noopener noreferrer">{randomMovie.movie.film_url}</a></p>
+          <img src={randomMovie.movie.poster_url} alt={randomMovie.movie.title} className="random-movie-poster" />
         </div>
-      )}
+      )} */}
 
       {topsterImageUrl && (
         <div className="topster-container">

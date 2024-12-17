@@ -1,17 +1,21 @@
-import time
+import json
 import random
+import time
+
 import pandas as pd
 from flask import Flask, Response, jsonify, request
-import json
 from flask_cors import CORS
 from sqlalchemy import and_
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.sql import exists
 from utils.api_utils import update_diary_entries
 from utils.get_stats import (get_combined_user_diary_and_movies,
                              get_top_rated_movies, get_user_stats_str)
 from utils.get_topster import get_topster_helper
 from utils.lbox_extraction import get_user_data, is_valid_username
 from utils.movie_extractions import get_a_movie_info
-from utils.table_definitions import Movie, User, UserDiary, UserWatchlist, db, migrate
+from utils.table_definitions import (Movie, User, UserDiary, UserWatchlist, db,
+                                     migrate)
 
 app = Flask(__name__, static_folder="../build", static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -26,6 +30,28 @@ migrate.init_app(app, db)
 # Create all tables if they don't exist
 with app.app_context():
     db.create_all()
+
+
+def get_or_create_user(username, db_session):
+    try:
+        # Check if the user already exists
+        user = User.query.filter_by(username=username).first()
+        
+        if not user:
+            # If user doesn't exist, create and add them to the database
+            user = User(username=username)
+            db_session.add(user)
+            db_session.commit()
+            print(f"User '{username}' added to the database.")
+        else:
+            print(f"User '{username}' already exists in the database.")
+        
+        return user  # Return the user object (existing or newly created)
+    
+    except SQLAlchemyError as e:
+        db_session.rollback()
+        print(f"Error occurred: {e}")
+        return None
 
 def remove_duplicates():
     users = User.query.all()
@@ -93,74 +119,44 @@ def add_user():
             'user_data': user_data_df.to_dict(orient='records')
         }), 201
 
-@app.route('/api/user_watchlist/<username>/', methods=['POST'])
-def populate_user_watchlist(username):
-    # Check if the user exists
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({'message': 'User not found!'}), 404
+# @app.route('/api/user_watchlist/<username>/', methods=['POST'])
+# def populate_user_watchlist(username):
+#     # Check if the user exists
+#     user = User.query.filter_by(username=username).first()
+#     if not user:
+#         return jsonify({'message': 'User not found!'}), 404
 
-    # Call the get_user_watchlist function
-    from utils.lbox_extraction import get_user_watchlist
-    try:
-        watchlist_df = get_user_watchlist(username)
-    except Exception as e:
-        return jsonify({'message': f"Error fetching watchlist: {str(e)}"}), 500
+    
 
-    if watchlist_df.empty:
-        return jsonify({'message': 'No watchlist found for this user.'}), 404
+#     # Convert the DataFrame to JSON and return it
+#     return jsonify({
+#         'message': f'{added_count} new entries added to the watchlist.',
+#         'watchlist': watchlist_df.to_dict(orient='records')
+#     }), 200
 
-    # Add entries to the UserWatchlist table
-    added_count = 0
-    for _, row in watchlist_df.iterrows():
-        # Check for duplicates
-        existing_entry = UserWatchlist.query.filter_by(
-            user_id=user.id,
-            film_id=row['film_id']
-        ).first()
-        if not existing_entry:
-            new_entry = UserWatchlist(
-                user_id=user.id,
-                film_id=row['film_id'],
-                film_slug=row['film_slug'],
-                film_url=row['film_url'],
-                poster_url=row['poster_url'],
-                title=row['title']
-            )
-            db.session.add(new_entry)
-            added_count += 1
+# @app.route('/api/random_watchlist_movie/<username>/', methods=['GET'])
+# def get_random_watchlist_movie(username):
+#     # Check if the user exists
+#     user = User.query.filter_by(username=username).first()
+#     if not user:
+#         return jsonify({'message': 'User not found!'}), 404
 
-    db.session.commit()
+#     # Retrieve the user's watchlist
+#     watchlist = UserWatchlist.query.filter_by(user_id=user.id).all()
 
-    # Convert the DataFrame to JSON and return it
-    return jsonify({
-        'message': f'{added_count} new entries added to the watchlist.',
-        'watchlist': watchlist_df.to_dict(orient='records')
-    }), 200
+#     if not watchlist:
+#         return jsonify({'message': 'Watchlist is empty!'}), 404
 
-@app.route('/api/random_watchlist_movie/<username>/', methods=['GET'])
-def get_random_watchlist_movie(username):
-    # Check if the user exists
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({'message': 'User not found!'}), 404
+#     # Pick a random movie from the watchlist
+#     random_movie = random.choice(watchlist)
 
-    # Retrieve the user's watchlist
-    watchlist = UserWatchlist.query.filter_by(user_id=user.id).all()
-
-    if not watchlist:
-        return jsonify({'message': 'Watchlist is empty!'}), 404
-
-    # Pick a random movie from the watchlist
-    random_movie = random.choice(watchlist)
-
-    return jsonify({
-        'movie': {
-            'title': random_movie.title,
-            'film_url': random_movie.film_url,
-            'poster_url': random_movie.poster_url
-        }
-    }), 200
+#     return jsonify({
+#         'movie': {
+#             'title': random_movie.title,
+#             'film_url': random_movie.film_url,
+#             'poster_url': random_movie.poster_url
+#         }
+#     }), 200
 
 @app.route('/api/movies/', methods=['GET'])
 def get_movies():
@@ -197,6 +193,71 @@ def get_topster(username):
         return jsonify({'message': "No image generated"}), 404
 
     return Response(img_data, mimetype='image/png')
+
+
+@app.route('/api/get_random_watchlist/<username>/', methods=['GET'])
+def get_random_watchlist_movie(username):
+    print("Starting get_random_watchlist endpoint")
+    # Check if the user exists
+    user = get_or_create_user(username, db.session)
+
+    is_in_watchlist = UserWatchlist.query.filter_by(user_id=user.id).first() is not None
+
+    if not is_in_watchlist:
+        print("Can't find user so generating data")
+        # Call the get_user_watchlist function
+        from utils.lbox_extraction import get_user_watchlist
+        try:
+            watchlist_df = get_user_watchlist(username)
+        except Exception as e:
+            return jsonify({'message': f"Error fetching watchlist: {str(e)}"}), 500
+
+        if watchlist_df.empty:
+            return jsonify({'message': 'No watchlist found for this user.'}), 404
+
+        # Add entries to the UserWatchlist table
+        added_count = 0
+        for _, row in watchlist_df.iterrows():
+            # Check for duplicates
+            existing_entry = UserWatchlist.query.filter_by(
+                user_id=user.id,
+                film_id=row['film_id']
+            ).first()
+            if not existing_entry:
+                new_entry = UserWatchlist(
+                    user_id=user.id,
+                    film_id=row['film_id'],
+                    film_slug=row['film_slug'],
+                    film_url=row['film_url'],
+                    poster_url=row['poster_url'],
+                    title=row['title']
+                )
+                db.session.add(new_entry)
+                added_count += 1
+
+        db.session.commit()
+
+    print("Retrieve data now")
+    # Retrieve the user's watchlist
+    watchlist = UserWatchlist.query.filter_by(user_id=user.id).all()
+    print(watchlist)
+
+    if not watchlist:
+        return jsonify({'message': 'Watchlist is empty!'}), 404
+
+    # Pick a random movie from the watchlist
+    random_movie = random.choice(watchlist)
+    print(random_movie)
+    print(random_movie.title)
+    print(f"https://letterboxd.com{random_movie.poster_url}")
+
+    return jsonify({
+        'movie': {
+            'title': random_movie.title,
+            'film_url': f"https://letterboxd.com{random_movie.film_url}",
+            'poster_url': f"https://letterboxd.com{random_movie.poster_url}"
+        }
+    }), 200
 
 
 if __name__ == '__main__':
