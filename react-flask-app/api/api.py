@@ -1,8 +1,7 @@
-# app.py
 import time
-
+import random
 import pandas as pd
-from flask import Flask, Response, jsonify, request, url_for
+from flask import Flask, Response, jsonify, request
 import json
 from flask_cors import CORS
 from sqlalchemy import and_
@@ -12,7 +11,7 @@ from utils.get_stats import (get_combined_user_diary_and_movies,
 from utils.get_topster import get_topster_helper
 from utils.lbox_extraction import get_user_data, is_valid_username
 from utils.movie_extractions import get_a_movie_info
-from utils.table_definitions import Movie, User, UserDiary, db, migrate
+from utils.table_definitions import Movie, User, UserDiary, UserWatchlist, db, migrate
 
 app = Flask(__name__, static_folder="../build", static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -23,6 +22,10 @@ CORS(app)
 # Initialize SQLAlchemy and Alembic Migrations
 db.init_app(app)
 migrate.init_app(app, db)
+
+# Create all tables if they don't exist
+with app.app_context():
+    db.create_all()
 
 def remove_duplicates():
     users = User.query.all()
@@ -90,34 +93,73 @@ def add_user():
             'user_data': user_data_df.to_dict(orient='records')
         }), 201
 
-@app.route('/api/user_diary/<username>/', methods=['GET'])
-def get_user_diary(username):
+@app.route('/api/user_watchlist/<username>/', methods=['POST'])
+def populate_user_watchlist(username):
+    # Check if the user exists
     user = User.query.filter_by(username=username).first()
-
     if not user:
         return jsonify({'message': 'User not found!'}), 404
 
-    diary_entries = UserDiary.query.filter_by(user_id=user.id).all()
+    # Call the get_user_watchlist function
+    from utils.lbox_extraction import get_user_watchlist
+    try:
+        watchlist_df = get_user_watchlist(username)
+    except Exception as e:
+        return jsonify({'message': f"Error fetching watchlist: {str(e)}"}), 500
 
-    if not diary_entries:
-        return jsonify({'message': 'No diary entries found for this user.'}), 404
+    if watchlist_df.empty:
+        return jsonify({'message': 'No watchlist found for this user.'}), 404
 
-    diary_data = pd.DataFrame([{
-        'day': entry.day,
-        'month': entry.month,
-        'year': entry.year,
-        'film': entry.film,
-        'released': entry.released,
-        'rating': entry.rating,
-        'review_link': entry.review_link,
-        'film_link': entry.film_link
-    } for entry in diary_entries])
+    # Add entries to the UserWatchlist table
+    added_count = 0
+    for _, row in watchlist_df.iterrows():
+        # Check for duplicates
+        existing_entry = UserWatchlist.query.filter_by(
+            user_id=user.id,
+            film_id=row['film_id']
+        ).first()
+        if not existing_entry:
+            new_entry = UserWatchlist(
+                user_id=user.id,
+                film_id=row['film_id'],
+                film_slug=row['film_slug'],
+                film_url=row['film_url'],
+                poster_url=row['poster_url'],
+                title=row['title']
+            )
+            db.session.add(new_entry)
+            added_count += 1
 
-    top_movies = get_top_rated_movies(diary_data)
+    db.session.commit()
+
+    # Convert the DataFrame to JSON and return it
     return jsonify({
-        'username': username,
-        'diary_entries': diary_data.to_dict(orient='records'),
-        'top_movies': top_movies.to_dict(orient='records')
+        'message': f'{added_count} new entries added to the watchlist.',
+        'watchlist': watchlist_df.to_dict(orient='records')
+    }), 200
+
+@app.route('/api/random_watchlist_movie/<username>/', methods=['GET'])
+def get_random_watchlist_movie(username):
+    # Check if the user exists
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'message': 'User not found!'}), 404
+
+    # Retrieve the user's watchlist
+    watchlist = UserWatchlist.query.filter_by(user_id=user.id).all()
+
+    if not watchlist:
+        return jsonify({'message': 'Watchlist is empty!'}), 404
+
+    # Pick a random movie from the watchlist
+    random_movie = random.choice(watchlist)
+
+    return jsonify({
+        'movie': {
+            'title': random_movie.title,
+            'film_url': random_movie.film_url,
+            'poster_url': random_movie.poster_url
+        }
     }), 200
 
 @app.route('/api/movies/', methods=['GET'])
@@ -145,10 +187,7 @@ def get_stats_str(username):
     if return_string is None:
         return jsonify({'message': "No string returned"}), 404
 
-    print(type(return_string))
-    print(return_string)
     return jsonify({'return_string': return_string}), 200
-    # return jsonify({'return_string': return_string.replace('\n', '<br />')}), 200
 
 @app.route('/api/get_topster/<username>/', methods=['GET'])
 def get_topster(username):
@@ -158,6 +197,7 @@ def get_topster(username):
         return jsonify({'message': "No image generated"}), 404
 
     return Response(img_data, mimetype='image/png')
+
 
 if __name__ == '__main__':
     with app.app_context():

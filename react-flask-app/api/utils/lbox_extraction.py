@@ -50,6 +50,63 @@ def get_user_diary_info(a_user):
 
     return return_df
 
+
+def get_user_watchlist(a_user):
+    '''
+    returns a DF of a user's watchlist information
+
+    # TOOD need to be able to handle users that do not exist
+    And try catch blocks
+    And logging
+    '''
+    # Get diary URL
+    watchlist_url = get_watchlist(a_user)
+
+    # Extract data from each poster
+    posters = []
+    while watchlist_url:
+        print(watchlist_url)
+        r = requests.get(watchlist_url)
+        soup = BeautifulSoup(r.content, features="lxml")
+
+        # Find all 'li' elements with the class 'poster-container'
+        poster_containers = soup.find_all("li", class_="poster-container")
+        for poster in poster_containers:
+            div = poster.find("div", class_="film-poster")
+            if div:
+                film_id = div.get("data-film-id", "")
+                film_slug = div.get("data-film-slug", "")
+                film_url = div.get("data-target-link", "")
+                poster_url = div.get("data-poster-url", "")
+                title = div.find("img").get("alt", "")
+                
+                posters.append({
+                    "film_id": film_id,
+                    "film_slug": film_slug,
+                    "film_url": film_url,
+                    "poster_url": poster_url,
+                    "title": title,
+                })
+
+        # Print extracted data
+        # for poster in posters:
+            # print(poster)
+
+        # Find out if there are any subsequent pages
+        older_link = soup.find_all("a", text="Older")
+
+        if older_link:
+            new_page = older_link[0]['href']
+            watchlist_url = f"{BASE_URL}{new_page}"
+        else:
+            watchlist_url = False
+
+    # Convert the list of dictionaries into a pandas DataFrame
+    watchlist_df = pd.DataFrame(posters)
+
+    return watchlist_df
+
+
 BASE_URL = "https://letterboxd.com"
 
 def gen_film_url(a_str):
@@ -57,6 +114,9 @@ def gen_film_url(a_str):
 
 def get_diary(a_user):
     return f"{BASE_URL}/{a_user}/films/diary/"
+
+def get_watchlist(a_user):
+    return f"{BASE_URL}/{a_user}/watchlist/"
 
 
 def get_user_data(user: str) -> pd.DataFrame:
